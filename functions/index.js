@@ -1,7 +1,11 @@
 const functions = require("firebase-functions");
+const admin = require('firebase-admin');
+const { getAuth } = require("firebase-admin/auth");
+
+admin.initializeApp(); 
 
 const { ApolloServer } = require('apollo-server-cloud-functions');
-const { ApolloServerPluginLandingPageGraphQLPlayground } = require('apollo-server-core');
+const { ApolloServerPluginLandingPageGraphQLPlayground, AuthenticationError } = require('apollo-server-core');
 const { makeExecutableSchema } = require('@graphql-tools/schema')
 
 const { UsersAPI } = require('./datasources/users');
@@ -28,12 +32,21 @@ schema = authDirectiveTransformer(schema)
 
 const server = new ApolloServer({
   schema,
-  context: ({ req }) => ({
-    user: {
-      role: 'patient',
-      uuid: 'GaYj5nPXWJQ207DODA5TMwPEbnA2'
+  context: async ({ req }) => {
+    const token = req.headers.authorization || '';
+    if(token == "")
+      throw new AuthenticationError("No token provided");
+    try {
+      const userVerified = await getAuth().verifyIdToken(token);
+      return { user: {
+        uid: userVerified.uid,
+        role: userVerified.role
+      } 
+    };
+    } catch(error) {
+      throw new AuthenticationError("Invalid token");
     }
-  }),
+  },
   introspection: true, 
   plugins: [
     ApolloServerPluginLandingPageGraphQLPlayground(),

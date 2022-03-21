@@ -1,10 +1,10 @@
 const { DataSource } = require('apollo-datasource');
 // The Firebase Admin SDK to access Firestore.
-const admin = require('firebase-admin');
+const admin = require('firebase-admin')
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const { getAuth } = require('firebase-admin/auth'); 
 const { UserInputError } = require('apollo-server-core');
-admin.initializeApp();
+
 userDb = getFirestore();
 
 class UsersAPI extends DataSource {

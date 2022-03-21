@@ -35,12 +35,12 @@ function authDirective(directiveName) {
                                 throw new ForbiddenError('This user is not authorized');
                             if (source == null) { //if source is undefined (=> no request was permitted earlier)
                                 if (user.role == 'patient') { //if this user is a patient
-                                    if (args.id && (args.id != user.uuid && !(await context.dataSources.usersAPI.isTherapistOfPatient(args.id, user.uuid)))) //check if request has a specified id
+                                    if (args.id && (args.id != user.uid && !(await context.dataSources.usersAPI.isTherapistOfPatient(args.id, user.uid)))) //check if request has a specified id
                                                                                                                                                    //if requested id != current user, and the id is not the current users therapist => deny
                                         throw new ForbiddenError('This user is not authorized');
                                 }
                                 else if (user.role == 'therapist') { //if this user is a therapist
-                                    if (args.id && (args.id != user.uuid && !(await context.dataSources.usersAPI.isTherapistOfPatient(user.uuid, args.id)))) //check if request has a specified id
+                                    if (args.id && (args.id != user.uid && !(await context.dataSources.usersAPI.isTherapistOfPatient(user.uid, args.id)))) //check if request has a specified id
                                                                                                                                                //if requested id != current user, and the id is not the current users patient => deny
                                         throw new ForbiddenError('This user is not authorized');
                                 }
