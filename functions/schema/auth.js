@@ -30,7 +30,7 @@ function authDirective(directiveName) {
                     if (requires) {
                         const { resolve = defaultFieldResolver } = fieldConfig;
                         fieldConfig.resolve = async function (source, args, context, info) {
-                            const user = context.user.token;
+                            const user = context.user;
                             if (!requires.includes(user.role))
                                 throw new ForbiddenError('This user is not authorized');
                             if (source == null) { //if source is undefined (=> no request was permitted earlier)

@@ -5,11 +5,13 @@ const { ApolloServerPluginLandingPageGraphQLPlayground } = require('apollo-serve
 const { makeExecutableSchema } = require('@graphql-tools/schema')
 
 const { UsersAPI } = require('./datasources/users');
+const { MedAPI } = require('./datasources/med');
 const { types } = require('./schema/schema');
 const { resolvers } = require('./resolvers/resolvers');
 
 const dataSources = () => ({
     usersAPI: new UsersAPI(),
+    medAPI: new MedAPI()
 });
 
 const { authDirective } = require('./schema/auth'); 
@@ -28,10 +30,8 @@ const server = new ApolloServer({
   schema,
   context: ({ req }) => ({
     user: {
-      token: {
-        role: 'therapist',
-        uuid: 'gFNMd96BADdTeVsnfoo9HwoD9j03'
-      }
+      role: 'patient',
+      uuid: 'GaYj5nPXWJQ207DODA5TMwPEbnA2'
     }
   }),
   introspection: true, 
