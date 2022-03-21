@@ -1,3 +1,4 @@
+const { getAuth } = require("firebase-admin/auth");
 const GraphQLJSON = require("graphql-type-json");
 
 // Provide resolver functions for your schema fields
@@ -33,7 +34,7 @@ const resolvers = {
   Mutation: {
     //---- Patients 
     createPatient: async (_source, args, { user, dataSources }) => {
-      return dataSources.usersAPI.createPatient(args);
+      return dataSources.usersAPI.createPatient(args, user);
     },
     //---- Tasks
     addTask: async (_source, args, { user, dataSources }) => {

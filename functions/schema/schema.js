@@ -49,7 +49,6 @@ const typeDefs = gql`
     address: String!
     condition: String!
     telephone: String!
-    therapist: String!
   }
 
   input TaskInput {
@@ -78,7 +77,7 @@ const typeDefs = gql`
     address: String!
     condition: String!
     telephone: String!
-    therapist: String!
+    therapist: [String]!
   }
 
   type Task @auth(requires: [patient, therapist]){

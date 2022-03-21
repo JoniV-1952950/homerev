@@ -33,16 +33,17 @@ class UsersAPI extends DataSource {
         return docData;
     }
 
-    async createPatient(args) {
+    async createPatient(args, user) {
         try{
             const userRec = await getAuth().createUser({
-                email: args.email,
-                displayName: args.name,
-                password: args.password
+                email: args.patientInfo.email,
+                displayName: args.patientInfo.name,
+                password: args.patientInfo.password
             });
-            delete args.password;
+            delete args.patientInfo.password;
+            args.patientInfo.therapist = [user.uid];
             getAuth().setCustomUserClaims(userRec.uid, { role: "patient" }); 
-            await userDb.collection('patients').doc(userRec.uid).set(args);
+            await userDb.collection('patients').doc(userRec.uid).set(args.patientInfo);
             return userRec.uid;
         } catch(error) {
             throw new UserInputError(error.errorInfo.message, error.errorInfo);
