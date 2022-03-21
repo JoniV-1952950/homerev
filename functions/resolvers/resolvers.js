@@ -5,7 +5,7 @@ const GraphQLJSON = require("graphql-type-json");
 const resolvers = {
   JSON: GraphQLJSON,
   Query: {
-    //---- Test endpoint
+    //----- Test endpoint
     hello: async(_source, args, { user, dataSources }) => {
       return "hello world";
     }, 
@@ -15,6 +15,13 @@ const resolvers = {
     },
     getPatientsOfTherapist: async(_source, args, { user, dataSources }) => {
       return dataSources.usersAPI.getPatientsOfTherapist(args);
+    },
+    //----- Therapist
+    getTherapist: async(_source, args, { user, dataSources }) => {
+      return dataSources.usersAPI.getTherapist(args); 
+    },
+    getTherapistsOfPatient: async(_source, args, { user, dataSources }) => {
+      return dataSources.usersAPI.getTherapistsOfPatient(args); 
     },
     //----- Tasks
     getTaskOfPatient: async(_source, args, { user, dataSources }) => {

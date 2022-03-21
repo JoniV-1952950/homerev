@@ -30,6 +30,10 @@ const typeDefs = gql`
     updatePatient(id: String!, patientInfo: PatientInput!): String @auth(requires: [patient, therapist]) #### todo
     deletePatient(id: String!): String @auth(requires: [patient, therapist]) #### todo
     
+    #### Therapist ####
+    updateTherapist(id: String!, therapistInfo: TherapistInput!): String @auth(requires: [therapist]) #### todo
+    deleteTherapist(id: String!): String @auth(requires: [therapist]) #### todo
+
     #### Tasks ####
     addTask(id: String!, taskInfo: TaskInput!): String @auth(requires: [patient]) 
     updateTask(id: String!, taskId: String!, taskInfo: TaskInput!): String @auth(requires: [patient])
@@ -48,6 +52,13 @@ const typeDefs = gql`
     birthdate: String!
     address: String!
     condition: String!
+    telephone: String!
+  }
+
+  input TherapistInput {
+    name: String!
+    birthdate: String!
+    address: String!
     telephone: String!
   }
 

@@ -11,16 +11,17 @@ class UsersAPI extends DataSource {
     constructor() {
       super()
     }
-  
+    //====== Patient ======
     //get patient with id specified in args
     async getPatient(args) {
       try {
         const patientRef = userDb.collection('patients').doc(args.id);
         const doc = await patientRef.get();
-        if(doc == null) {
+        const docData = doc.data();
+        if(docData == null) {
             throw new UserInputError("This user does not exist");
         }
-        return doc.data();
+        return docData;
       } catch(error) {
             throw new Error(error.errorInfo.message, error.errorInfo);
       }
@@ -48,6 +49,37 @@ class UsersAPI extends DataSource {
         } catch(error) {
             throw new UserInputError(error.errorInfo.message, error.errorInfo);
         }
+    }
+
+    //====== Therapist ======
+    async getTherapist(args) {
+        try {
+            const theraRef = userDb.collection('therapists').doc(args.id);
+            const doc = await theraRef.get();
+            const docData = doc.data()
+            if(docData == null) {
+                throw new UserInputError("This user does not exist");
+            }
+            return docData;
+          } catch(error) {
+                throw new Error(error.errorInfo.message, error.errorInfo);
+          }
+    }
+
+    async getTherapistsOfPatient(args) {
+        const patientRef = userDb.collection('patients').doc(args.id);
+        const patient = await patientRef.get();
+        const therapists = patient.data().therapist; 
+        const theraRef = userDb.collection('therapists');
+        let docData = [];
+        for(let i = 0; i < therapists.length; i++) {
+            const therapist = await theraRef.doc(therapists[i]).get();
+            const therapistData = therapist.data();
+            if(therapistData == null)
+                throw new UserInputError('This user does not exist');
+            docData.push(therapistData);
+        }
+        return docData;
     }
 
     async isTherapistOfPatient(therapistId, patientId) {
