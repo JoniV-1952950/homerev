@@ -1,8 +1,8 @@
-const { gql } = require("apollo-server-cloud-functions");
-
+import { gql } from "apollo-server-cloud-functions";
 
 // Construct a schema, using GraphQL schema language
 const typeDefs = gql`
+  # custom scalar to define a JSON object
   scalar JSON
 
   type Query {
@@ -25,7 +25,7 @@ const typeDefs = gql`
   }
 
   type Mutation {
-    ##### Patients ####
+    #### Patients ####
     createPatient(patientInfo: PatientInput!): String @auth(requires: [therapist]) ##gives the id of the user just created
     updatePatient(id: String!, patientInfo: PatientInput!): String @auth(requires: [patient, therapist]) #### todo
     deletePatient(id: String!): String @auth(requires: [patient, therapist]) #### todo
@@ -64,14 +64,12 @@ const typeDefs = gql`
 
   input TaskInput {
     title: String!
-    date: String!
     task: JSON!
   }
 
   input TodoInput {
     title: String!
     deadline: String!
-    dateCreated: String!
     todo: JSON!
   }
 
@@ -94,7 +92,7 @@ const typeDefs = gql`
   type Task @auth(requires: [patient, therapist]){
     id: String!
     title: String!
-    date: String!
+    dateCreated: String!
     task: JSON!
   }
 
@@ -107,4 +105,4 @@ const typeDefs = gql`
   }
 `;
 
-exports.types = typeDefs;
+export { typeDefs as types };
