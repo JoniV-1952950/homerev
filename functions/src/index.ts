@@ -6,6 +6,8 @@ import { getAuth } from "firebase-admin/auth";
 // init firebase default app (homerev-users)
 admin.initializeApp(); 
 
+// init logger
+
 // import apollo dependencies
 import { ApolloServer } from 'apollo-server-cloud-functions';
 import { ApolloServerPluginLandingPageGraphQLPlayground, AuthenticationError } from 'apollo-server-core';
@@ -40,6 +42,7 @@ schema = authDirectiveTransformer(schema)
 const server = new ApolloServer({
   schema,
   context: async ({ req }) => {
+    
     // get the token from the authorization header, or return an empty string
     const token = req.headers.authorization || '';
     // if no token throw authentication error
@@ -48,6 +51,10 @@ const server = new ApolloServer({
     // try to verify the token, and return a user object
     try {
       const userVerified = await getAuth().verifyIdToken(token);
+      
+      // create log if this is not an introspectionquery
+      if(req.body.operationName != "IntrospectionQuery")
+        functions.logger.info("Access by " + userVerified.uid, req.body);
       return { 
             user: {
                 uid: userVerified.uid,
