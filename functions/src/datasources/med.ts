@@ -3,13 +3,11 @@ import { getFirestore } from 'firebase-admin/firestore';
 import admin = require('firebase-admin');
 import { UserInputError } from 'apollo-server-core';
 
-// get service account for this database
-import * as serviceAccount from "../../../serviceAccountKey.json";
 import { ServiceAccount } from 'firebase-admin';
 
 // initialize second app (homerev-med) to have access to medical database
 const medAdmin = admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount as ServiceAccount)
+  credential: admin.credential.cert(process.env.FIREBASE_SERVICE_ACCOUNT as ServiceAccount)
 }, "medAdmin");
 // get the medical database ref
 const medDb = getFirestore(medAdmin);
