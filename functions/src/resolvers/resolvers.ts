@@ -4,6 +4,21 @@ import { GraphQLJSON } from "graphql-type-json";
 export const resolvers = {
   // custom scalar resolver from graphql-type-json (https://github.com/taion/graphql-type-json)
   JSON: GraphQLJSON,
+  //----- Patient resolvers, for fields that are not default types
+  Patient: {
+    therapists: async(_source: any, args: any, context: any): Promise<any> => {
+      const dataSources = context.dataSources;
+      return _source.therapists.map((thera: any) => dataSources.usersAPI.getTherapist(thera));
+    },
+    tasks: async(_source: any, args: any, context: any): Promise<any> => {
+      const dataSources = context.dataSources;
+      return dataSources.medAPI.getTasks(_source.id);
+    },
+    todos: async(_source: any, args: any, context: any): Promise<any> => {
+      const dataSources = context.dataSources;
+      return dataSources.medAPI.getTodos(_source.id);
+    },
+  },
   Query: {
     //----- Test endpoint
     hello: async(_source: any): Promise<string> => {

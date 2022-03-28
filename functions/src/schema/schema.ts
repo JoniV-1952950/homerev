@@ -11,8 +11,8 @@ const typeDefs = gql`
     getPatientsOfTherapist(id: String!): [Patient]! @auth(requires: [therapist])
 
     #### Therapist #####
-    getTherapist(id: String!): Therapist! @auth(requires: [therapist, patient]) ## TODO
-    getTherapistsOfPatient(id: String!): [Therapist]! @auth(requires: [therapist, patient]) ## TODO
+    getTherapist(id: String!): Therapist! @auth(requires: [therapist, patient])
+    getTherapistsOfPatient(id: String!): [Therapist]! @auth(requires: [therapist, patient])
 
     #### TASKS #####
     getTaskOfPatient(id: String!, taskId: String!): Task! @auth(requires: [therapist, patient])
@@ -86,7 +86,9 @@ const typeDefs = gql`
     address: String!
     condition: String!
     telephone: String!
-    therapist: [String]!
+    therapists: [Therapist]!
+    tasks: [Task]!
+    todos: [Todo]!
   }
 
   type Task @auth(requires: [patient, therapist]){
