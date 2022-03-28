@@ -19,7 +19,7 @@ const typeDefs = gql`
     getTasksOfPatient(id: String!): [Task]! @auth(requires: [therapist, patient])
     
     #### TODOS #####
-    getTodoOfPatient(id: String!, ): Todo! @auth(requires: [therapist, patient])
+    getTodoOfPatient(id: String!, todoId: String!): Todo! @auth(requires: [therapist, patient])
     getTodosOfPatient(id: String!): [Todo]! @auth(requires: [therapist, patient])
     hello: String!
   }
@@ -27,12 +27,12 @@ const typeDefs = gql`
   type Mutation {
     #### Patients ####
     createPatient(patientInfo: PatientInput!): String @auth(requires: [therapist]) ##gives the id of the user just created
-    updatePatient(id: String!, patientInfo: PatientInput!): String @auth(requires: [patient, therapist]) #### todo
-    deletePatient(id: String!): String @auth(requires: [patient, therapist]) #### todo
+    updatePatient(id: String!, patientInfo: PatientInput!): String @auth(requires: [patient, therapist])
+    deletePatient(id: String!): String @auth(requires: [patient, therapist])
     
     #### Therapist ####
-    updateTherapist(id: String!, therapistInfo: TherapistInput!): String @auth(requires: [therapist]) #### todo
-    deleteTherapist(id: String!): String @auth(requires: [therapist]) #### todo
+    updateTherapist(id: String!, therapistInfo: TherapistInput!): String @auth(requires: [therapist])
+    deleteTherapist(id: String!): String @auth(requires: [therapist])
 
     #### Tasks ####
     addTask(id: String!, taskInfo: TaskInput!): String @auth(requires: [patient]) 
@@ -45,6 +45,7 @@ const typeDefs = gql`
     deleteTodo(id: String!, todoId: String!): String @auth(requires: [patient, therapist])
   }
 
+  #### INPUTS ####
   input PatientInput {
     email: String!
     password: String!
@@ -73,7 +74,9 @@ const typeDefs = gql`
     todo: JSON!
   }
 
+  #### TYPES ####
   type Therapist @auth(requires: [patient, therapist]){
+    id: String!
     name: String!
     birthdate: String! 
     address: String!
@@ -81,6 +84,7 @@ const typeDefs = gql`
   }
 
   type Patient @auth(requires: [patient, therapist]){
+    id: String!
     name: String!
     birthdate: String! 
     address: String!
@@ -88,7 +92,9 @@ const typeDefs = gql`
     telephone: String!
     therapists: [Therapist]!
     tasks: [Task]!
+    task(taskId: String!): Task!
     todos: [Todo]!
+    todo(todoId: String!): Todo!
   }
 
   type Task @auth(requires: [patient, therapist]){

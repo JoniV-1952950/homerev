@@ -10,9 +10,17 @@ export const resolvers = {
       const dataSources = context.dataSources;
       return _source.therapists.map((thera: any) => dataSources.usersAPI.getTherapist(thera));
     },
+    task: async(_source: any, args: any, context: any): Promise<any> => {
+      const dataSources = context.dataSources;
+      return dataSources.medAPI.getTask(_source.id, args.id);
+    },
     tasks: async(_source: any, args: any, context: any): Promise<any> => {
       const dataSources = context.dataSources;
       return dataSources.medAPI.getTasks(_source.id);
+    },
+    todo: async(_source: any, args: any, context: any): Promise<any> => {
+      const dataSources = context.dataSources;
+      return dataSources.medAPI.getTodo(_source.id, args.id);
     },
     todos: async(_source: any, args: any, context: any): Promise<any> => {
       const dataSources = context.dataSources;
@@ -66,7 +74,24 @@ export const resolvers = {
     createPatient: async(_source: any, args: any, context: any): Promise<string> => {
       const user = context.user;
       const dataSources = context.dataSources;
-      return dataSources.usersAPI.createPatient(args, user);
+      return dataSources.usersAPI.createPatient(args.patientInfo, user);
+    },
+    updatePatient: async(_source: any, args: any, context: any): Promise<string> => {
+      const dataSources = context.dataSources;
+      return dataSources.usersAPI.updatePatient(args.patientInfo, args.id);
+    },
+    deletePatient: async(_source: any, args: any, context: any): Promise<string> => {
+      const dataSources = context.dataSources;
+      return dataSources.usersAPI.deletePatient(args.id);
+    },
+    //---- Therapists
+    updateTherapist: async(_source: any, args: any, context: any): Promise<string> => {
+      const dataSources = context.dataSources;
+      return dataSources.usersAPI.updateTherapist(args.therapistInfo, args.id);
+    },
+    deleteTherapist: async(_source: any, args: any, context: any): Promise<string> => {
+      const dataSources = context.dataSources;
+      return dataSources.usersAPI.deleteTherapist(args.id);
     },
     //---- Tasks
     addTask: async(_source: any, args: any, context: any): Promise<string> => {

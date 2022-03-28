@@ -6,8 +6,6 @@ import { getAuth } from "firebase-admin/auth";
 // init firebase default app (homerev-users)
 admin.initializeApp(); 
 
-// init logger
-
 // import apollo dependencies
 import { ApolloServer } from 'apollo-server-cloud-functions';
 import { ApolloServerPluginLandingPageGraphQLPlayground, AuthenticationError } from 'apollo-server-core';
@@ -74,6 +72,6 @@ const server = new ApolloServer({
   dataSources, 
 });
 
-// creates the firebase function
+// creates the firebase function, runWith set the secret from google secret manager to process.env.??. it contains the service account for the second function
 exports.graphql = functions.runWith({ secrets: ["MED_FIREBASE_SERVICE_ACCOUNT"] }).region('europe-west1').https.onRequest(server.createHandler() as any);
 

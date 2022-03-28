@@ -4,6 +4,13 @@ import admin = require('firebase-admin');
 import { UserInputError } from 'apollo-server-core';
 import { ServiceAccount } from 'firebase-admin';
 
+import * as crypto from 'crypto';
+// HASH
+function hashID(id: string): string {
+    return crypto.createHash('sha256').update(id).digest('hex');
+}
+export { hashID };
+
 // initialize second app (homerev-med) to have access to medical database
 let medAdmin;
 if(process.env.MED_FIREBASE_SERVICE_ACCOUNT) {
@@ -32,6 +39,8 @@ export class MedAPI extends DataSource {
     //======== TASKS ==========
     // get the task with taskId for patient with patientId
     async getTask(patientId: string, taskId: string): Promise<any> {
+        // hash the patientId
+        patientId = hashID(patientId);
         //throws error if user does not exist
         await this.patientExists(patientId);
         const taskRef = medDb.collection("patients").doc(patientId).collection('tasks').doc(taskId);
@@ -48,7 +57,8 @@ export class MedAPI extends DataSource {
 
     // get the tasks for the patient with patientId
     async getTasks(patientId: string): Promise<any> {
-        // TODO patientId.hash
+        // hash the patientId
+        patientId = hashID(patientId);
         //throws error if user does not exist
         await this.patientExists(patientId);
         const tasksRef = medDb.collection("patients").doc(patientId).collection('tasks');
@@ -66,7 +76,8 @@ export class MedAPI extends DataSource {
 
     // add a new task for the patient specified with patientId
     async addTask(patientId: string, taskInfo: any): Promise<string> {
-        // TODO args.id.hash
+        // hash the patientId
+        patientId = hashID(patientId);
         //throws error if user does not exist
         await this.patientExists(patientId);
         const taskRef = medDb.collection("patients").doc(patientId).collection('tasks');
@@ -76,6 +87,8 @@ export class MedAPI extends DataSource {
 
     // update task from patientId with taskId
     async updateTask(patientId: string, taskId: string, taskInfo: any): Promise<string> {
+        // hash the patientId
+        patientId = hashID(patientId);
         //throws error if user does not exist
         await this.patientExists(patientId);
         const taskRef = medDb.collection("patients").doc(patientId).collection('tasks').doc(taskId);
@@ -88,6 +101,8 @@ export class MedAPI extends DataSource {
 
     // delete task from patientId with taskId
     async deleteTask(patientId: string, taskId: string): Promise<string> {
+        // hash the patientId
+        patientId = hashID(patientId);        
         //throws error if user does not exist
         await this.patientExists(patientId);
         const taskRef = medDb.collection("patients").doc(patientId).collection('tasks').doc(taskId);
@@ -101,6 +116,8 @@ export class MedAPI extends DataSource {
     //========== TODOS ==========
     // get the todo with todoId for patient with patientId
     async getTodo(patientId: string, todoId: string): Promise<any> {
+        // hash the patientId
+        patientId = hashID(patientId);
         //throws error if user does not exist
         await this.patientExists(patientId);
         const todoRef = medDb.collection("patients").doc(patientId).collection('todos').doc(todoId);
@@ -117,7 +134,8 @@ export class MedAPI extends DataSource {
 
     // get the todos for the patient with patientId
     async getTodos(patientId: string): Promise<any> {
-        // TODO patientId.hash
+        // hash the patientId
+        patientId = hashID(patientId);
         //throws error if user does not exist
         await this.patientExists(patientId);
         const todosRef = medDb.collection("patients").doc(patientId).collection('todos');
@@ -135,7 +153,8 @@ export class MedAPI extends DataSource {
 
     // add a new todo for the patient specified with patientId
     async addTodo(patientId: string, todoInfo: any): Promise<string> {
-        // TODO args.id.hash
+        // hash the patientId
+        patientId = hashID(patientId);
         //throws error if user does not exist
         await this.patientExists(patientId);
         const todoRef = medDb.collection("patients").doc(patientId).collection('todos');
@@ -145,6 +164,8 @@ export class MedAPI extends DataSource {
 
     // update todo from patientId with todoId
     async updateTodo(patientId: string, todoId: string, todoInfo: any): Promise<string> {
+        // hash the patientId
+        patientId = hashID(patientId);
         //throws error if user does not exist
         await this.patientExists(patientId);
         const todoRef = medDb.collection("patients").doc(patientId).collection('todos').doc(todoId);
@@ -157,6 +178,8 @@ export class MedAPI extends DataSource {
 
     // delete todo from patientId with todoId
     async deleteTodo(patientId: string, todoId: string): Promise<string> {
+        // hash the patientId
+        patientId = hashID(patientId);
         //throws error if user does not exist
         await this.patientExists(patientId);
         const todoRef = medDb.collection("patients").doc(patientId).collection('todos').doc(todoId);

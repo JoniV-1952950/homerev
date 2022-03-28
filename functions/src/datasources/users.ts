@@ -7,7 +7,7 @@ import { getAuth } from "firebase-admin/auth";
 const userDb = getFirestore();
 
 // get the medical database
-import { medDb } from './med';
+import { medDb, hashID } from './med';
 
 // database interactions for userdata
 export class UsersAPI extends DataSource {
@@ -42,26 +42,77 @@ export class UsersAPI extends DataSource {
         return docData;
     }
 
-    // create a new patient with the fields specified in args, the current user will be the therapist of this new patient
-    async createPatient(args: any, user: any): Promise<string> {
+    // create a new patient with the fields specified in patientInfo, the current user will be the therapist of this new patient
+    async createPatient(patientInfo: any, user: any): Promise<string> {
         try{
             // create the user
             const userRec = await getAuth().createUser({
-                email: args.patientInfo.email,
-                displayName: args.patientInfo.name,
-                password: args.patientInfo.password
+                email: patientInfo.email,
+                displayName: patientInfo.name,
+                password: patientInfo.password
             });
             // delete the password from args object
-            delete args.patientInfo.password;
+            delete patientInfo.password;
             // add therapist to args object
-            args.patientInfo.therapists = [user.uid];
+            patientInfo.therapists = [user.uid];
             // add custom user claim for the patient (adds role claim to the idtokens retrieved from firebase)
             getAuth().setCustomUserClaims(userRec.uid, { role: "patient" }); 
             // create document with user data in the user database
-            await userDb.collection('patients').doc(userRec.uid).set(args.patientInfo);
+            await userDb.collection('patients').doc(userRec.uid).set(patientInfo);
             // create empty document in the med database TODO hash
-            await medDb.collection('patients').doc(userRec.uid).set({});
+            await medDb.collection('patients').doc(hashID(userRec.uid)).set({});
             return userRec.uid;
+        // if anything goes wrong throw error
+        } catch(error: any) {
+            throw new UserInputError(error.errorInfo.message, error.errorInfo);
+        }
+    }
+
+    // update a patient with the fields specified in patientInfo
+    async updatePatient(patientInfo: any, id: string): Promise<string> {
+        try{
+            // update the user
+            const userRec = await getAuth().updateUser(id, {
+                email: patientInfo.email,
+                displayName: patientInfo.name,
+                password: patientInfo.password
+            });
+            // delete the password from patientInfo object
+            delete patientInfo.password;
+            // update document with user data in the user database
+            await userDb.collection('patients').doc(userRec.uid).update(patientInfo);
+            return userRec.uid;
+        // if anything goes wrong throw error
+        } catch(error: any) {
+            throw new UserInputError(error.errorInfo.message, error.errorInfo);
+        }
+    }
+
+    // delete a patient with the fields specified in args
+    async deletePatient(id: string): Promise<string> {
+        try{
+            // create the user
+            await getAuth().deleteUser(id);
+            // create document with user data in the user database
+            await userDb.collection('patients').doc(id).delete();
+            const medUser = medDb.collection('patients').doc(hashID(id));
+            // get all subcollections for this user
+            const collections = await medUser.listCollections();
+            const batch = medDb.batch();
+            // for each collection get all documents and delete them via a batch (transaction)
+            for (const coll of collections) {
+              // Get a new write batch
+              const documents = await coll.listDocuments();
+          
+              for (const doc of documents) {
+                batch.delete(doc);
+              }
+            }
+            // execute batch
+            await batch.commit();
+
+            await medDb.collection('patients').doc(hashID(id)).delete();
+            return id;
         // if anything goes wrong throw error
         } catch(error: any) {
             throw new UserInputError(error.errorInfo.message, error.errorInfo);
@@ -100,6 +151,41 @@ export class UsersAPI extends DataSource {
         }
         return docData;
     }
+
+    // update a therapist with the fields specified in patientInfo
+    async updateTherapist(therapistInfo: any, id: string): Promise<string> {
+        try{
+            // update the user
+            const userRec = await getAuth().updateUser(id, {
+                email: therapistInfo.email,
+                displayName: therapistInfo.name,
+                password: therapistInfo.password
+            });
+            // delete the password from therapistInfo object
+            delete therapistInfo.password;
+            // update document with user data in the user database
+            await userDb.collection('therapists').doc(userRec.uid).update(therapistInfo);
+            return userRec.uid;
+        // if anything goes wrong throw error
+        } catch(error: any) {
+            throw new UserInputError(error.errorInfo.message, error.errorInfo);
+        }
+    }
+
+    // delete a patient with the fields specified in args
+    async deleteTherapist(id: string): Promise<string> {
+        try{
+            // create the user
+            await getAuth().deleteUser(id);
+            // create document with user data in the user database
+            await userDb.collection('therapists').doc(id).delete();
+            return id;
+        // if anything goes wrong throw error
+        } catch(error: any) {
+            throw new UserInputError(error.errorInfo.message, error.errorInfo);
+        }
+    }
+
 
     // checks whether a user is the therapist of a patient
     async isTherapistOfPatient(therapistId: string, patientId: string): Promise<boolean> {
