@@ -75,5 +75,5 @@ const server = new ApolloServer({
 });
 
 // creates the firebase function
-exports.graphql = functions.region('europe-west1').https.onRequest(server.createHandler() as any);
+exports.graphql = functions.runWith({ secrets: ["MED_FIREBASE_SERVICE_ACCOUNT"] }).region('europe-west1').https.onRequest(server.createHandler() as any);
 
