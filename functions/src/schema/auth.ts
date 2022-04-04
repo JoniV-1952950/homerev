@@ -15,6 +15,7 @@ export function authDirective(directiveName: string) {
         enum Role {
             patient
             therapist
+            student
             admin
         }`,
         authDirectiveTransformer: (schema: GraphQLSchema) =>

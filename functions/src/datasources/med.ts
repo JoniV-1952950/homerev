@@ -1,6 +1,6 @@
 import { DataSource } from 'apollo-datasource';
 import { getFirestore } from 'firebase-admin/firestore';
-import admin = require('firebase-admin');
+import * as admin from 'firebase-admin';
 import { UserInputError } from 'apollo-server-core';
 import { ServiceAccount } from 'firebase-admin';
 
@@ -27,6 +27,16 @@ export { medDb };
 export class MedAPI extends DataSource {
     constructor() {
       super()
+    }
+
+    // get the project types that exist
+    async getProjectTypes(): Promise<string[]> {
+        const projectTypeRefs = medDb.collection("utils").doc("projectTypes");
+        const projectTypes = await projectTypeRefs.get();
+        const data = projectTypes?.data();
+        if(data?.projectTypes)
+            return data.projectTypes as string[];
+        throw new Error('Something went wrong connecting to the db');
     }
 
     // check if patient exists, throws error if patient does not exist

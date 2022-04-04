@@ -12,7 +12,7 @@ export const resolvers = {
     },
     task: async(_source: any, args: any, context: any): Promise<any> => {
       const dataSources = context.dataSources;
-      return dataSources.medAPI.getTask(_source.id, args.id);
+      return dataSources.medAPI.getTask(_source.id, args.taskId);
     },
     tasks: async(_source: any, args: any, context: any): Promise<any> => {
       const dataSources = context.dataSources;
@@ -20,7 +20,7 @@ export const resolvers = {
     },
     todo: async(_source: any, args: any, context: any): Promise<any> => {
       const dataSources = context.dataSources;
-      return dataSources.medAPI.getTodo(_source.id, args.id);
+      return dataSources.medAPI.getTodo(_source.id, args.todoId);
     },
     todos: async(_source: any, args: any, context: any): Promise<any> => {
       const dataSources = context.dataSources;

@@ -1,6 +1,6 @@
 // import firebase dependencies
-import functions = require("firebase-functions");
-import admin = require('firebase-admin');
+import * as functions from "firebase-functions";
+import * as admin from 'firebase-admin';
 import { getAuth } from "firebase-admin/auth";
 
 // init firebase default app (homerev-users)
@@ -24,17 +24,25 @@ const dataSources = () => ({
     usersAPI: new UsersAPI(),
     medAPI: new MedAPI()
 });
+// get the project types
+const projectTypesArr = ["bimanueel", "VR"]; //await dataSources().medAPI.getProjectTypes(); // does not work await at top level => ES2022 compile option gives other problems
+let projectTypes = `enum ProjectType {`;
+for(const projectType of projectTypesArr) {
+  projectTypes += projectType + `,`;
+}
+projectTypes += `}`; 
 
-// create schema, using type definitions in schema.ts, auth directive declaration from auth.ts, and the resolvers
+// create schema, using type definitions in schema.ts, auth directive declaration from auth.ts, projectTypes enum and the resolvers
 let schema = makeExecutableSchema({
-  typeDefs: [
+  typeDefs: () => [
     authDirectiveTypeDefs,
-    types
+    types,
+    projectTypes
   ],
   resolvers,
 });
 // transform the schema so that the auth directive is implemented
-schema = authDirectiveTransformer(schema)
+schema = authDirectiveTransformer(schema);
 
 // create the server with the schema, dataSources and the context
 const server = new ApolloServer({
@@ -74,4 +82,3 @@ const server = new ApolloServer({
 
 // creates the firebase function, runWith set the secret from google secret manager to process.env.??. it contains the service account for the second function
 exports.graphql = functions.runWith({ secrets: ["MED_FIREBASE_SERVICE_ACCOUNT"] }).region('europe-west1').https.onRequest(server.createHandler() as any);
-

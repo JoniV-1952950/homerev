@@ -64,12 +64,12 @@ const typeDefs = gql`
   }
 
   input TaskInput {
-    title: String!
+    type: ProjectType!
     task: JSON!
   }
 
   input TodoInput {
-    title: String!
+    type: ProjectType!
     deadline: String!
     todo: JSON!
   }
@@ -99,14 +99,14 @@ const typeDefs = gql`
 
   type Task @auth(requires: [patient, therapist]){
     id: String!
-    title: String!
+    type: ProjectType!
     dateCreated: String!
     task: JSON!
   }
 
   type Todo @auth(requires: [patient, therapist]){
     id: String!
-    title: String!
+    type: ProjectType!
     dateCreated: String!
     deadline: String!
     todo: JSON!
