@@ -17,6 +17,7 @@ import { MedAPI } from './datasources/med';
 import { types } from './schema/schema';
 import { resolvers } from './resolvers/resolvers';
 import { authDirective } from './schema/auth'; 
+
 const { authDirectiveTypeDefs, authDirectiveTransformer } = authDirective('auth');
 
 // create dataSources object
@@ -25,7 +26,7 @@ const dataSources = () => ({
     medAPI: new MedAPI()
 });
 // get the project types
-const projectTypesArr = ["bimanueel", "VR"]; //await dataSources().medAPI.getProjectTypes(); // does not work await at top level => ES2022 compile option gives other problems
+const projectTypesArr = ["bimanueel", "VR"]; //await dataSources().medAPI.getProjectTypes(); // does not work: await at top level => ES2022 compile option gives other problems
 let projectTypes = `enum ProjectType {`;
 for(const projectType of projectTypesArr) {
   projectTypes += projectType + `,`;
@@ -34,7 +35,7 @@ projectTypes += `}`;
 
 // create schema, using type definitions in schema.ts, auth directive declaration from auth.ts, projectTypes enum and the resolvers
 let schema = makeExecutableSchema({
-  typeDefs: () => [
+  typeDefs: [
     authDirectiveTypeDefs,
     types,
     projectTypes
@@ -60,7 +61,7 @@ const server = new ApolloServer({
       
       // create log if this is not an introspectionquery
       if(req.body.operationName != "IntrospectionQuery")
-        functions.logger.info("Access by " + userVerified.uid, req.body);
+        functions.logger.info("Access by " + userVerified.uid + ' (role: ' + userVerified.role +')', req.body);
       return { 
             user: {
                 uid: userVerified.uid,
@@ -80,5 +81,39 @@ const server = new ApolloServer({
   dataSources, 
 });
 
-// creates the firebase function, runWith set the secret from google secret manager to process.env.??. it contains the service account for the second function
+// creates the firebase function, runWith set the secret from google secret manager to process.env.??. it contains the service account for the second database
 exports.graphql = functions.runWith({ secrets: ["MED_FIREBASE_SERVICE_ACCOUNT"] }).region('europe-west1').https.onRequest(server.createHandler() as any);
+
+
+// On sign up.
+exports.processSignUp = functions.region('europe-west1').auth.user().onCreate(async (user) => {
+  // Check if user meets role criteria.
+  functions.logger.info(user)
+  if (user.providerData[0].providerId == 'password')
+    return;
+  if (
+    user.email &&
+    user.email.endsWith('@student.uhasselt.be') &&
+    user.emailVerified 
+  ) {
+    const customClaims = {
+      role: "student"
+     };
+  try {
+    // Set custom user claims on this newly created user.
+    await getAuth().setCustomUserClaims(user.uid, customClaims);
+
+    } catch (error) {
+      console.log(error);
+    }
+  }
+  else {
+    try {
+      // delete the user
+      await getAuth().deleteUser(user.uid);
+  
+      } catch (error) {
+        console.log(error);
+      }
+    }
+  });
