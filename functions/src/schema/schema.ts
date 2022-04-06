@@ -4,23 +4,23 @@ import { gql } from "apollo-server-cloud-functions";
 const typeDefs = gql`
   # custom scalar to define a JSON object
   scalar JSON
+  # custom scalar to define a Date
+  scalar Date
+  scalar DateTime
 
   type Query {
     #### Patient #####
     getPatient(id: String!): Patient! @auth(requires: [therapist, patient])
-    getPatientsOfTherapist(id: String!): [Patient]! @auth(requires: [therapist])
-
+    getPatientsOfTherapistNext(afterDocID: String, perPage: Int!, id: String!, name: String): [Patient]! @auth(requires: [therapist])
+    getPatientsOfTherapistPrevious(beforeDocID: String, perPage: Int!, id: String!, name: String): [Patient]! @auth(requires: [therapist])
+    
     #### Therapist #####
     getTherapist(id: String!): Therapist! @auth(requires: [therapist, patient])
     getTherapistsOfPatient(id: String!): [Therapist]! @auth(requires: [therapist, patient])
 
     #### TASKS #####
-    getTaskOfPatient(id: String!, taskId: String!): Task! @auth(requires: [therapist, patient])
-    getTasksOfPatient(id: String!): [Task]! @auth(requires: [therapist, patient])
+    getTasksOfPatients(nr_patients: Int!, nr_tasks_per_patient: Int!, gender: Gender, bd_gt: Date, bd_lt: Date, condition: String): [[Task]!]! @auth(requires: [therapist, student])
     
-    #### TODOS #####
-    getTodoOfPatient(id: String!, todoId: String!): Todo! @auth(requires: [therapist, patient])
-    getTodosOfPatient(id: String!): [Todo]! @auth(requires: [therapist, patient])
     hello: String!
   }
 
@@ -50,15 +50,16 @@ const typeDefs = gql`
     email: String!
     password: String!
     name: String!
-    birthdate: String!
+    birthdate: Date!
     address: String!
     condition: String!
     telephone: String!
+    gender: Gender!
   }
 
   input TherapistInput {
     name: String!
-    birthdate: String!
+    birthdate: Date!
     address: String!
     telephone: String!
   }
@@ -70,7 +71,7 @@ const typeDefs = gql`
 
   input TodoInput {
     type: ProjectType!
-    deadline: String!
+    deadline: DateTime!
     todo: JSON!
   }
 
@@ -78,7 +79,7 @@ const typeDefs = gql`
   type Therapist @auth(requires: [patient, therapist]){
     id: String!
     name: String!
-    birthdate: String! 
+    birthdate: Date! 
     address: String!
     telephone: String!
   }
@@ -86,10 +87,11 @@ const typeDefs = gql`
   type Patient @auth(requires: [patient, therapist]){
     id: String!
     name: String!
-    birthdate: String! 
+    birthdate: Date! 
     address: String!
     condition: String!
     telephone: String!
+    gender: Gender!
     therapists: [Therapist]!
     tasks: [Task]!
     task(taskId: String!): Task!
@@ -97,19 +99,25 @@ const typeDefs = gql`
     todo(todoId: String!): Todo!
   }
 
-  type Task @auth(requires: [patient, therapist]){
+  type Task @auth(requires: [patient, therapist, student]){
     id: String!
     type: ProjectType!
-    dateCreated: String!
+    dateCreated: DateTime!
     task: JSON!
   }
 
   type Todo @auth(requires: [patient, therapist]){
     id: String!
     type: ProjectType!
-    dateCreated: String!
-    deadline: String!
+    dateCreated: DateTime!
+    deadline: DateTime!
     todo: JSON!
+  }
+
+  enum Gender {
+    M
+    V
+    X
   }
 `;
 

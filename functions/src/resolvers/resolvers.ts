@@ -1,9 +1,11 @@
-import { GraphQLJSON } from "graphql-type-json";
+import { GraphQLDate, GraphQLJSON, GraphQLDateTime } from "graphql-scalars";
 
 // Provide resolver functions for your schema fields
 export const resolvers = {
   // custom scalar resolver from graphql-type-json (https://github.com/taion/graphql-type-json)
   JSON: GraphQLJSON,
+  Date: GraphQLDate,
+  DateTime: GraphQLDateTime,
   //----- Patient resolvers, for fields that are not default types
   Patient: {
     therapists: async(_source: any, args: any, context: any): Promise<any> => {
@@ -12,19 +14,19 @@ export const resolvers = {
     },
     task: async(_source: any, args: any, context: any): Promise<any> => {
       const dataSources = context.dataSources;
-      return dataSources.medAPI.getTask(_source.id, args.taskId);
+      return dataSources.medAPI.getTaskOfPatient(_source.id, args.taskId);
     },
     tasks: async(_source: any, args: any, context: any): Promise<any> => {
       const dataSources = context.dataSources;
-      return dataSources.medAPI.getTasks(_source.id);
+      return dataSources.medAPI.getTasksOfPatient(_source.id);
     },
     todo: async(_source: any, args: any, context: any): Promise<any> => {
       const dataSources = context.dataSources;
-      return dataSources.medAPI.getTodo(_source.id, args.todoId);
+      return dataSources.medAPI.getTodoOfPatient(_source.id, args.todoId);
     },
     todos: async(_source: any, args: any, context: any): Promise<any> => {
       const dataSources = context.dataSources;
-      return dataSources.medAPI.getTodos(_source.id);
+      return dataSources.medAPI.getTodosOfPatient(_source.id);
     },
   },
   Query: {
@@ -37,9 +39,13 @@ export const resolvers = {
       const dataSources = context.dataSources;
       return dataSources.usersAPI.getPatient(args.id);
     },
-    getPatientsOfTherapist: async(_source: any, args: any, context: any): Promise<any> => {
+    getPatientsOfTherapistNext: async(_source: any, args: any, context: any): Promise<any> => {
       const dataSources = context.dataSources;
-      return dataSources.usersAPI.getPatientsOfTherapist(args.id);
+      return dataSources.usersAPI.getPatientsOfTherapist(args.id, { afterDocID: args.afterDocID, perPage: args.perPage }, args.name);
+    },
+    getPatientsOfTherapistPrevious: async(_source: any, args: any, context: any): Promise<any> => {
+      const dataSources = context.dataSources;
+      return dataSources.usersAPI.getPatientsOfTherapist(args.id, { beforeDocID: args.beforeDocID, perPage: args.perPage }, args.name);
     },
     //----- Therapists
     getTherapist: async(_source: any, args: any, context: any): Promise<any> => {
@@ -51,23 +57,11 @@ export const resolvers = {
       return dataSources.usersAPI.getTherapistsOfPatient(args.id); 
     },
     //----- Tasks
-    getTaskOfPatient: async(_source: any, args: any, context: any): Promise<any> => {
+    getTasksOfPatients: async(_source: any, args: any, context: any): Promise<any> => {
       const dataSources = context.dataSources;
-      return dataSources.medAPI.getTask(args.id, args.taskId);
+      const patientIDs =  await dataSources.usersAPI.getPatientsIDs(args.nr_patients, { bd_lt: args.bd_lt, bd_gt: args.bd_gt }, args.condition, args.gender);
+      return await dataSources.medAPI.getTasks(patientIDs, args.nr_tasks_per_patient);
     },
-    getTasksOfPatient: async(_source: any, args: any, context: any): Promise<any> => {
-      const dataSources = context.dataSources;
-      return dataSources.medAPI.getTasks(args.id);
-    },
-    //----- Todos
-    getTodoOfPatient: async(_source: any, args: any, context: any): Promise<any> => {
-      const dataSources = context.dataSources;
-      return dataSources.medAPI.getTodo(args.id, args.todoId);
-    },
-    getTodosOfPatient: async(_source: any, args: any, context: any): Promise<any> => {
-      const dataSources = context.dataSources;
-      return dataSources.medAPI.getTodos(args.id); 
-    }
   },
   Mutation: {
     //---- Patients 
@@ -96,28 +90,28 @@ export const resolvers = {
     //---- Tasks
     addTask: async(_source: any, args: any, context: any): Promise<string> => {
       const dataSources = context.dataSources;
-      return dataSources.medAPI.addTask(args.id, args.taskInfo);
+      return dataSources.medAPI.addTaskToPatient(args.id, args.taskInfo);
     },
     updateTask: async(_source: any, args: any, context: any): Promise<string> => {
       const dataSources = context.dataSources;
-      return dataSources.medAPI.updateTask(args.id, args.taskId, args.taskInfo); 
+      return dataSources.medAPI.updateTaskOfPatient(args.id, args.taskId, args.taskInfo); 
     },
     deleteTask: async(_source: any, args: any, context: any): Promise<string> => {
       const dataSources = context.dataSources;
-      return dataSources.medAPI.deleteTask(args.id, args.taskId);
+      return dataSources.medAPI.deleteTaskOfPatient(args.id, args.taskId);
     },
     //---- Todos
     addTodo: async(_source: any, args: any, context: any): Promise<string> => {
       const dataSources = context.dataSources;
-      return dataSources.medAPI.addTodo(args.id, args.todoInfo);
+      return dataSources.medAPI.addTodoToPatient(args.id, args.todoInfo);
     },
     updateTodo: async(_source: any, args: any, context: any): Promise<string> => {
       const dataSources = context.dataSources;
-      return dataSources.medAPI.updateTodo(args.id, args.todoId, args.todoInfo); 
+      return dataSources.medAPI.updateTodoOfPatient(args.id, args.todoId, args.todoInfo); 
     },
     deleteTodo: async(_source: any, args: any, context: any): Promise<string> => {
       const dataSources = context.dataSources;
-      return dataSources.medAPI.deleteTodo(args.id, args.todoId);
+      return dataSources.medAPI.deleteTodoOfPatient(args.id, args.todoId);
     }
   }
   };

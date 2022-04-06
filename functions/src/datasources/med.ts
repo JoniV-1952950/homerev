@@ -48,7 +48,7 @@ export class MedAPI extends DataSource {
 
     //======== TASKS ==========
     // get the task with taskId for patient with patientId
-    async getTask(patientId: string, taskId: string): Promise<any> {
+    async getTaskOfPatient(patientId: string, taskId: string): Promise<any> {
         // hash the patientId
         patientId = hashID(patientId);
         //throws error if user does not exist
@@ -59,14 +59,14 @@ export class MedAPI extends DataSource {
         if(data) {
             // set the taskId as a value in the return for easy processing client side
             data.id = taskId;
-            data.dateCreated = task.createTime?.toDate().getTime().toString();
+            data.dateCreated = task.createTime?.toDate();
             return data; 
         }
         throw new UserInputError('There does not exist a task with id: ' + taskId + ' for the patient with uid: ' + patientId);
     }
 
     // get the tasks for the patient with patientId
-    async getTasks(patientId: string): Promise<any> {
+    async getTasksOfPatient(patientId: string): Promise<any> {
         // hash the patientId
         patientId = hashID(patientId);
         //throws error if user does not exist
@@ -78,14 +78,37 @@ export class MedAPI extends DataSource {
                                             const id = doc.id;
                                             let data = doc.data();
                                             data.id = id;
-                                            data.dateCreated = doc.createTime?.toDate().getTime().toString();
+                                            data.dateCreated = doc.createTime?.toDate();
                                             return data;
                                         });
         return docData; 
     }
 
+    // get the tasks for every patient id in the array
+    async getTasks(patientIDs: string[], nr_tasks_per_patient: number): Promise<any> {
+        // hash the patientId
+        let docData = [];
+        for(let patientId of patientIDs){
+            patientId = hashID(patientId);
+            //throws error if user does not exist
+            await this.patientExists(patientId);
+            const tasksRef = medDb.collection("patients").doc(patientId).collection('tasks');
+            const snapshot = await tasksRef.limit(nr_tasks_per_patient).get();
+            let data = snapshot.docs.map((doc: any) => {
+                                                // set the taskId as a value in the return for easy processing client side
+                                                const id = doc.id;
+                                                let data = doc.data();
+                                                data.id = id;
+                                                data.dateCreated = doc.createTime?.toDate();
+                                                return data;
+                                            });
+            docData.push(data);
+        }
+        return docData; 
+    }
+
     // add a new task for the patient specified with patientId
-    async addTask(patientId: string, taskInfo: any): Promise<string> {
+    async addTaskToPatient(patientId: string, taskInfo: any): Promise<string> {
         // hash the patientId
         patientId = hashID(patientId);
         //throws error if user does not exist
@@ -96,7 +119,7 @@ export class MedAPI extends DataSource {
     }
 
     // update task from patientId with taskId
-    async updateTask(patientId: string, taskId: string, taskInfo: any): Promise<string> {
+    async updateTaskOfPatient(patientId: string, taskId: string, taskInfo: any): Promise<string> {
         // hash the patientId
         patientId = hashID(patientId);
         //throws error if user does not exist
@@ -110,7 +133,7 @@ export class MedAPI extends DataSource {
     }
 
     // delete task from patientId with taskId
-    async deleteTask(patientId: string, taskId: string): Promise<string> {
+    async deleteTaskOfPatient(patientId: string, taskId: string): Promise<string> {
         // hash the patientId
         patientId = hashID(patientId);        
         //throws error if user does not exist
@@ -125,7 +148,7 @@ export class MedAPI extends DataSource {
 
     //========== TODOS ==========
     // get the todo with todoId for patient with patientId
-    async getTodo(patientId: string, todoId: string): Promise<any> {
+    async getTodoOfPatient(patientId: string, todoId: string): Promise<any> {
         // hash the patientId
         patientId = hashID(patientId);
         //throws error if user does not exist
@@ -136,14 +159,14 @@ export class MedAPI extends DataSource {
         if(data) {
             // set the todoId as a value in the return for easy processing client side
             data.id = todoId;
-            data.dateCreated = todo.createTime?.toDate().getTime().toString();
+            data.dateCreated = todo.createTime?.toDate();
             return data; 
         }
         throw new UserInputError('There does not exist a todo with id: ' + todoId + ' for the patient with uid: ' + patientId);
     }
 
     // get the todos for the patient with patientId
-    async getTodos(patientId: string): Promise<any> {
+    async getTodosOfPatient(patientId: string): Promise<any> {
         // hash the patientId
         patientId = hashID(patientId);
         //throws error if user does not exist
@@ -155,14 +178,14 @@ export class MedAPI extends DataSource {
                                             const id = doc.id;
                                             let data = doc.data();
                                             data.id = id;
-                                            data.dateCreated = doc.createTime?.toDate().getTime().toString();
+                                            data.dateCreated = doc.createTime?.toDate();
                                             return data;
                                         });
         return docData; 
     }
 
     // add a new todo for the patient specified with patientId
-    async addTodo(patientId: string, todoInfo: any): Promise<string> {
+    async addTodoToPatient(patientId: string, todoInfo: any): Promise<string> {
         // hash the patientId
         patientId = hashID(patientId);
         //throws error if user does not exist
@@ -173,7 +196,7 @@ export class MedAPI extends DataSource {
     }
 
     // update todo from patientId with todoId
-    async updateTodo(patientId: string, todoId: string, todoInfo: any): Promise<string> {
+    async updateTodoOfPatient(patientId: string, todoId: string, todoInfo: any): Promise<string> {
         // hash the patientId
         patientId = hashID(patientId);
         //throws error if user does not exist
@@ -187,7 +210,7 @@ export class MedAPI extends DataSource {
     }
 
     // delete todo from patientId with todoId
-    async deleteTodo(patientId: string, todoId: string): Promise<string> {
+    async deleteTodoOfPatient(patientId: string, todoId: string): Promise<string> {
         // hash the patientId
         patientId = hashID(patientId);
         //throws error if user does not exist

@@ -1,5 +1,5 @@
 import { DataSource } from 'apollo-datasource';
-import { getFirestore } from 'firebase-admin/firestore';
+import { getFirestore, Query, Timestamp } from 'firebase-admin/firestore';
 import { UserInputError } from 'apollo-server-core';
 import { getAuth } from "firebase-admin/auth";
 
@@ -8,6 +8,15 @@ const userDb = getFirestore();
 
 // get the medical database
 import { medDb, hashID } from './med';
+import { firestore } from 'firebase-admin';
+
+// gender enum used as filter
+enum Gender {
+    M = "M", 
+    V = "V", 
+    X = "X"
+}
+
 
 // database interactions for userdata
 export class UsersAPI extends DataSource {
@@ -22,23 +31,81 @@ export class UsersAPI extends DataSource {
         let docData = doc.data();
         if(docData == null)
             throw new UserInputError('The patient with uid: ' + id + ' does not exist');
+        // add id to object for easy client side processing
         docData.id = id; 
+        // convert firestore timestamp to date object
+        docData.birthdate = (docData.birthdate as Timestamp).toDate();
         return docData;
     }
 
     // get patients of therapist with id specified
-    async getPatientsOfTherapist(id: string): Promise<any> {
+    async getPatientsOfTherapist(id: string, pageDetails: {beforeDocID: string, afterDocID: string; perPage: number}, name: string): Promise<any> {
         // if given id is not a therapist throw error
         if(!(await userDb.collection('therapists').doc(id).get()).data())
             throw new UserInputError('The user with uid: ' + id + ' is not a therapist');
         // get the patients where the id is in the therapist array
-        const patientRef = userDb.collection('patients').where("therapists", "array-contains", id);
-        const snapshot = await patientRef.get();
-        let docData = snapshot.docs.map((doc: any) => {
+        let patientQuery = userDb.collection('patients').where("therapists", "array-contains", id);
+        // filter for name
+        if(name) {
+            // https://stackoverflow.com/questions/46568142/google-firestore-query-on-substring-of-a-property-value-text-search
+            patientQuery = patientQuery
+                                .where('name', '>=', name)
+                                .where('name', '<=', name + '\uf8ff').orderBy("name");
+
+            // pagination
+            //order by documentID first
+            patientQuery = patientQuery.orderBy(firestore.FieldPath.documentId());
+            // if afterDocID is specified start after this document (need name and document ID to determine the document to start at)
+            if(pageDetails.afterDocID)
+                patientQuery = patientQuery.startAfter((await userDb.collection('patients').doc(pageDetails.afterDocID).get()).data()?.name, pageDetails.afterDocID);
+            // else end before this document
+            else if(pageDetails.beforeDocID)
+                patientQuery = patientQuery.endBefore((await userDb.collection('patients').doc(pageDetails.beforeDocID).get()).data()?.name, pageDetails.beforeDocID);
+        }
+        else {
+            // pagination
+            // order by documentID first
+            patientQuery = patientQuery.orderBy(firestore.FieldPath.documentId());
+            // if afterDocID is specified start after this document (only document ID is needed)
+            if(pageDetails.afterDocID)
+                patientQuery = patientQuery.startAfter(pageDetails.afterDocID);
+            // else end before this document
+            else if(pageDetails.beforeDocID)
+                patientQuery = patientQuery.endBefore(pageDetails.beforeDocID);
+        }
+        // limit the results to the amount requested
+        patientQuery = patientQuery.limit(pageDetails.perPage);
+        const snapshot = await patientQuery.get();
+        const docData = snapshot.docs.map((doc: any) => {
                                                     let docData = doc.data();
                                                     docData.id = doc.id;
+                                                    // convert firestore timestamp to date object
+                                                    docData.birthdate = (docData.birthdate as Timestamp).toDate();
                                                     return docData;
                                                     });
+        return docData;
+    }
+
+     // get patients with specified characteristics
+     async getPatientsIDs(nr_patients: number, birthdateParams: {bd_lt: Date; bd_gt: Date}, condition: string, gender: Gender): Promise<string[]> {
+        // get a reference to the patients collection
+        let patientQuery = userDb.collection('patients') as Query;
+        // if bd_lt is specified, filter
+        if(birthdateParams.bd_lt)
+            patientQuery = patientQuery.where("birthdate", "<=", birthdateParams.bd_lt);
+        // if bd_gt is specified, filter
+        if(birthdateParams.bd_gt)
+            patientQuery = patientQuery.where("birthdate", ">=", birthdateParams.bd_gt);
+        // if condition is specified, filter
+        if(condition)
+            patientQuery = patientQuery.where("condition", "==", condition);
+        // if gender is specified, filter
+        if(gender)
+            patientQuery = patientQuery.where("gender", "==", gender);
+        // limit the results to the amount requested
+        patientQuery = patientQuery.limit(nr_patients);
+        const snapshot = await patientQuery.get();
+        const docData = snapshot.docs.map((doc: any) =>  doc.id);
         return docData;
     }
 
@@ -128,6 +195,8 @@ export class UsersAPI extends DataSource {
         if(docData == null)
             throw new UserInputError("The therapist with uid: " + id + " does not exist");
         docData.id = id;
+        // convert firestore timestamp to date object
+        docData.birthdate = (docData.birthdate as Timestamp).toDate();
         return docData;
     }
 
@@ -147,6 +216,8 @@ export class UsersAPI extends DataSource {
             if(therapistData == null)
                 throw new UserInputError('One of the therapists of this user does not exist');
             therapistData.id = therapists[i];
+            // convert firestore timestamp to date object
+            therapistData.birthdate = (therapistData.birthdate as Timestamp).toDate();
             docData.push(therapistData);
         }
         return docData;
