@@ -1,8 +1,8 @@
 import { DataSource } from 'apollo-datasource';
-import { getFirestore } from 'firebase-admin/firestore';
+import { getFirestore, Query } from 'firebase-admin/firestore';
 import * as admin from 'firebase-admin';
 import { UserInputError } from 'apollo-server-core';
-import { ServiceAccount } from 'firebase-admin';
+import { firestore, ServiceAccount } from 'firebase-admin';
 
 import * as crypto from 'crypto';
 // HASH
@@ -59,47 +59,67 @@ export class MedAPI extends DataSource {
         if(data) {
             // set the taskId as a value in the return for easy processing client side
             data.id = taskId;
-            data.dateCreated = task.createTime?.toDate();
+            data.dateCreated = data.dateCreated.toDate();
             return data; 
         }
         throw new UserInputError('There does not exist a task with id: ' + taskId + ' for the patient with uid: ' + patientId);
     }
 
     // get the tasks for the patient with patientId
-    async getTasksOfPatient(patientId: string): Promise<any> {
+    async getTasksOfPatient(patientId: string, pageDetails: { afterDocID: string, beforeDocID: string, perPage: number }, type: string): Promise<any> {
         // hash the patientId
         patientId = hashID(patientId);
         //throws error if user does not exist
         await this.patientExists(patientId);
-        const tasksRef = medDb.collection("patients").doc(patientId).collection('tasks');
-        const snapshot = await tasksRef.get();
+        let tasksQuery = medDb.collection("patients").doc(patientId).collection('tasks') as Query;
+        if(type)
+            tasksQuery = tasksQuery.where("type", "==", type);
+
+        // pagination
+        // order by createTime first
+        tasksQuery = tasksQuery.orderBy("dateCreated");
+        // order by documentID first
+        tasksQuery = tasksQuery.orderBy(firestore.FieldPath.documentId());
+        // if afterDocID is specified start after this document (only document ID is needed)
+        if(pageDetails.afterDocID)
+            tasksQuery = tasksQuery.startAfter((await medDb.collection('patients').doc(patientId).collection('tasks').doc(pageDetails.afterDocID).get()).data()?.dateCreated, pageDetails.afterDocID);
+        // else end before this document
+        else if(pageDetails.beforeDocID)
+            tasksQuery = tasksQuery.endBefore((await medDb.collection('patients').doc(patientId).collection('patients').doc(pageDetails.afterDocID).get()).data()?.dateCreated, pageDetails.beforeDocID);
+
+        // limit the results to the amount requested
+        tasksQuery = tasksQuery.limit(pageDetails.perPage);
+        const snapshot = await tasksQuery.get();
         let docData = snapshot.docs.map((doc: any) => {
                                             // set the taskId as a value in the return for easy processing client side
                                             const id = doc.id;
                                             let data = doc.data();
                                             data.id = id;
-                                            data.dateCreated = doc.createTime?.toDate();
+                                            data.dateCreated = data.dateCreated.toDate();
                                             return data;
                                         });
         return docData; 
     }
 
     // get the tasks for every patient id in the array
-    async getTasks(patientIDs: string[], nr_tasks_per_patient: number): Promise<any> {
+    async getTasks(patientIDs: string[], nr_tasks_per_patient: number, type: string): Promise<any> {
         // hash the patientId
         let docData = [];
         for(let patientId of patientIDs){
             patientId = hashID(patientId);
             //throws error if user does not exist
             await this.patientExists(patientId);
-            const tasksRef = medDb.collection("patients").doc(patientId).collection('tasks');
-            const snapshot = await tasksRef.limit(nr_tasks_per_patient).get();
+            let tasksQuery = medDb.collection("patients").doc(patientId).collection('tasks') as Query;
+            if(type)
+                tasksQuery = tasksQuery.where("type", "==", type);
+
+            const snapshot = await tasksQuery.limit(nr_tasks_per_patient).get();
             let data = snapshot.docs.map((doc: any) => {
                                                 // set the taskId as a value in the return for easy processing client side
                                                 const id = doc.id;
                                                 let data = doc.data();
                                                 data.id = id;
-                                                data.dateCreated = doc.createTime?.toDate();
+                                                data.dateCreated = data.dateCreated.toDate();
                                                 return data;
                                             });
             docData.push(data);
@@ -114,6 +134,7 @@ export class MedAPI extends DataSource {
         //throws error if user does not exist
         await this.patientExists(patientId);
         const taskRef = medDb.collection("patients").doc(patientId).collection('tasks');
+        taskInfo.dateCreated = new Date();
         const task = await taskRef.add(taskInfo);
         return task.id; 
     }
@@ -128,7 +149,7 @@ export class MedAPI extends DataSource {
         // check if task exists for this user
         if(!(await taskRef.get()).exists)
             throw new UserInputError('There does not exist a task with id: ' + taskId + ' for the patient with uid: ' + patientId);
-        await taskRef.set(taskInfo);
+        await taskRef.update(taskInfo);
         return taskRef.id; 
     }
 
@@ -159,7 +180,7 @@ export class MedAPI extends DataSource {
         if(data) {
             // set the todoId as a value in the return for easy processing client side
             data.id = todoId;
-            data.dateCreated = todo.createTime?.toDate();
+            data.dateCreated = data.dateCreated.toDate();
             return data; 
         }
         throw new UserInputError('There does not exist a todo with id: ' + todoId + ' for the patient with uid: ' + patientId);
@@ -178,7 +199,7 @@ export class MedAPI extends DataSource {
                                             const id = doc.id;
                                             let data = doc.data();
                                             data.id = id;
-                                            data.dateCreated = doc.createTime?.toDate();
+                                            data.dateCreated = data.dateCreated.toDate();
                                             return data;
                                         });
         return docData; 
@@ -191,6 +212,7 @@ export class MedAPI extends DataSource {
         //throws error if user does not exist
         await this.patientExists(patientId);
         const todoRef = medDb.collection("patients").doc(patientId).collection('todos');
+        todoInfo.dateCreated = new Date();
         const todo = await todoRef.add(todoInfo);
         return todo.id; 
     }
@@ -205,7 +227,7 @@ export class MedAPI extends DataSource {
         // check if todo exists for this user
         if(!(await todoRef.get()).exists)
             throw new UserInputError('There does not exist a todo with id: ' + todoId + ' for the patient with uid: ' + patientId);
-        await todoRef.set(todoInfo);
+        await todoRef.update(todoInfo);
         return todoRef.id; 
     }
 

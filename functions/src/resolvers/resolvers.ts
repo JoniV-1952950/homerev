@@ -16,9 +16,13 @@ export const resolvers = {
       const dataSources = context.dataSources;
       return dataSources.medAPI.getTaskOfPatient(_source.id, args.taskId);
     },
-    tasks: async(_source: any, args: any, context: any): Promise<any> => {
+    tasksNext: async(_source: any, args: any, context: any): Promise<any> => {
       const dataSources = context.dataSources;
-      return dataSources.medAPI.getTasksOfPatient(_source.id);
+      return dataSources.medAPI.getTasksOfPatient(_source.id, { afterDocID: args.afterDocID, perPage: args.perPage }, args.type);
+    },
+    tasksPrevious: async(_source: any, args: any, context: any): Promise<any> => {
+      const dataSources = context.dataSources;
+      return dataSources.medAPI.getTasksOfPatient(_source.id, { beforeDocID: args.beforeDocID, perPage: args.perPage }, args.type);
     },
     todo: async(_source: any, args: any, context: any): Promise<any> => {
       const dataSources = context.dataSources;
@@ -28,6 +32,16 @@ export const resolvers = {
       const dataSources = context.dataSources;
       return dataSources.medAPI.getTodosOfPatient(_source.id);
     },
+  },
+  Therapist: {
+    patientsNext: async(_source: any, args: any, context: any): Promise<any> => {
+      const dataSources = context.dataSources;
+      return dataSources.usersAPI.getPatientsOfTherapist(_source.id, { afterDocID: args.afterDocID, perPage: args.perPage }, args.name)
+    },
+    patientsPrevious: async(_source: any, args: any, context: any): Promise<any> => {
+      const dataSources = context.dataSources;
+      return dataSources.usersAPI.getPatientsOfTherapist(_source.id, { beforeDocID: args.beforeDocID, perPage: args.perPage }, args.name)
+    }
   },
   Query: {
     //----- Test endpoint
@@ -60,7 +74,7 @@ export const resolvers = {
     getTasksOfPatients: async(_source: any, args: any, context: any): Promise<any> => {
       const dataSources = context.dataSources;
       const patientIDs =  await dataSources.usersAPI.getPatientsIDs(args.nr_patients, { bd_lt: args.bd_lt, bd_gt: args.bd_gt }, args.condition, args.gender);
-      return await dataSources.medAPI.getTasks(patientIDs, args.nr_tasks_per_patient);
+      return await dataSources.medAPI.getTasks(patientIDs, args.nr_tasks_per_patient, args.type);
     },
   },
   Mutation: {

@@ -84,7 +84,6 @@ const server = new ApolloServer({
 // creates the firebase function, runWith set the secret from google secret manager to process.env.??. it contains the service account for the second database
 exports.graphql = functions.runWith({ secrets: ["MED_FIREBASE_SERVICE_ACCOUNT"] }).region('europe-west1').https.onRequest(server.createHandler() as any);
 
-
 // On sign up.
 exports.processSignUp = functions.region('europe-west1').auth.user().onCreate(async (user) => {
   // Check if user meets role criteria.

@@ -1,6 +1,7 @@
 import { DataSource } from 'apollo-datasource';
 import { getFirestore, Query, Timestamp } from 'firebase-admin/firestore';
 import { UserInputError } from 'apollo-server-core';
+import { firestore } from 'firebase-admin';
 import { getAuth } from "firebase-admin/auth";
 
 // get the firestore database connected to the default project
@@ -8,7 +9,6 @@ const userDb = getFirestore();
 
 // get the medical database
 import { medDb, hashID } from './med';
-import { firestore } from 'firebase-admin';
 
 // gender enum used as filter
 enum Gender {
