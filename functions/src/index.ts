@@ -14,11 +14,13 @@ import { makeExecutableSchema } from '@graphql-tools/schema';
 // import own modules
 import { UsersAPI } from './datasources/users';
 import { MedAPI } from './datasources/med';
-import { types } from './schema/schema';
+import { mutations } from './schema/mutation';
+import { queries } from './schema/query';
 import { resolvers } from './resolvers/resolvers';
 import { authDirective } from './schema/auth'; 
+import { Variables } from "./utils/variables";
 
-const { authDirectiveTypeDefs, authDirectiveTransformer } = authDirective('auth');
+const { authDirectiveTypeDefs, authDirectiveTransformer } = authDirective();
 
 // create dataSources object
 const dataSources = () => ({
@@ -37,7 +39,8 @@ projectTypes += `}`;
 let schema = makeExecutableSchema({
   typeDefs: [
     authDirectiveTypeDefs,
-    types,
+    queries,
+    mutations,
     projectTypes
   ],
   resolvers,
@@ -60,7 +63,7 @@ const server = new ApolloServer({
       const userVerified = await getAuth().verifyIdToken(token);
       
       // create log if this is not an introspectionquery
-      if(req.body.operationName != "IntrospectionQuery")
+      if(req.body.operationName != Variables.INTRO_QUERY)
         functions.logger.info("Access by " + userVerified.uid + ' (role: ' + userVerified.role +')', req.body);
       return { 
             user: {
@@ -81,23 +84,22 @@ const server = new ApolloServer({
   dataSources, 
 });
 
-// creates the firebase function, runWith set the secret from google secret manager to process.env.??. it contains the service account for the second database
-exports.graphql = functions.runWith({ secrets: ["MED_FIREBASE_SERVICE_ACCOUNT"] }).region('europe-west1').https.onRequest(server.createHandler() as any);
+// creates the firebase function, runWith sets the secret from google secret manager to process.env.??. it contains the service account for the second database
+exports.v1 = functions.runWith({ secrets: [Variables.FIREBASE_SERVICE_ACCOUNT_GSM] }).region(Variables.REGION_GRAPHQL).https.onRequest(server.createHandler() as any);
 
 // On sign up.
-exports.processSignUp = functions.region('europe-west1').auth.user().onCreate(async (user) => {
+exports.processSignUp = functions.region(Variables.REGION_SIGNUP_PROCESS).auth.user().onCreate(async (user) => {
   // Check if user meets role criteria.
-  functions.logger.info(user)
   if (user.providerData[0].providerId == 'password')
     return;
   if (
     user.email &&
-    user.email.endsWith('@student.uhasselt.be') &&
+    user.email.endsWith(Variables.STUDENT_EMAIL_SUFFIX) &&
     user.emailVerified 
   ) {
     const customClaims = {
-      role: "student"
-     };
+      role: Variables.STUDENT_ROLE
+    };
   try {
     // Set custom user claims on this newly created user.
     await getAuth().setCustomUserClaims(user.uid, customClaims);

@@ -1,5 +1,20 @@
 import { GraphQLDate, GraphQLJSON, GraphQLDateTime } from "graphql-scalars";
+import { Gender } from "../utils/enums";
+import type { Context, Filter, PageDetails } from "../utils/types";
 
+// The resolvers object is a chain that is traversed for each query starting at the query/mutation object
+// The following (not working) query is processed like this
+//     query patient {
+//       name
+//       tasks
+//     }
+// Resolver chain:
+//    Query.patient
+//    Patient.tasks
+// For the name field there is no extra resolver is defined so the default is used ( => use the value available in the current object else return null)
+// The args argument in each function corresponds to the arguments given in the schema for this object
+// The _source argument in each function contains the elements that were retrieved earlier in the resolver chain
+ 
 // Provide resolver functions for your schema fields
 export const resolvers = {
   // custom scalar resolver from graphql-type-json (https://github.com/taion/graphql-type-json)
@@ -8,70 +23,54 @@ export const resolvers = {
   DateTime: GraphQLDateTime,
   //----- Patient resolvers, for fields that are not default types
   Patient: {
-    therapists: async(_source: any, args: any, context: any): Promise<any> => {
+    therapists: async(_source: any, args: any, context: Context): Promise<any> => {
       const dataSources = context.dataSources;
       return _source.therapists.map((thera: any) => dataSources.usersAPI.getTherapist(thera));
     },
-    task: async(_source: any, args: any, context: any): Promise<any> => {
+    task: async(_source: any, args: { taskId: string; }, context: Context): Promise<any> => {
       const dataSources = context.dataSources;
       return dataSources.medAPI.getTaskOfPatient(_source.id, args.taskId);
     },
-    tasksNext: async(_source: any, args: any, context: any): Promise<any> => {
+    tasks: async(_source: any, args: { pagination: PageDetails; type: string; filter: Filter; }, context: Context): Promise<any> => {
       const dataSources = context.dataSources;
-      return dataSources.medAPI.getTasksOfPatient(_source.id, { afterDocID: args.afterDocID, perPage: args.perPage }, args.type);
+      return dataSources.medAPI.getTasksOfPatient(_source.id, args.pagination, args.type, args.filter);
     },
-    tasksPrevious: async(_source: any, args: any, context: any): Promise<any> => {
-      const dataSources = context.dataSources;
-      return dataSources.medAPI.getTasksOfPatient(_source.id, { beforeDocID: args.beforeDocID, perPage: args.perPage }, args.type);
-    },
-    todo: async(_source: any, args: any, context: any): Promise<any> => {
+    todo: async(_source: any, args: { todoId: string; }, context: Context): Promise<any> => {
       const dataSources = context.dataSources;
       return dataSources.medAPI.getTodoOfPatient(_source.id, args.todoId);
     },
-    todos: async(_source: any, args: any, context: any): Promise<any> => {
+    todos: async(_source: any, args: { pagination: PageDetails; type: string; filter: Filter; }, context: Context): Promise<any> => {
       const dataSources = context.dataSources;
-      return dataSources.medAPI.getTodosOfPatient(_source.id);
+      return dataSources.medAPI.getTodosOfPatient(_source.id, args.pagination, args.type, args.filter);
     },
   },
   Therapist: {
-    patientsNext: async(_source: any, args: any, context: any): Promise<any> => {
+    patients: async(_source: any, args: { pagination: PageDetails; name: string; }, context: Context): Promise<any> => {
       const dataSources = context.dataSources;
-      return dataSources.usersAPI.getPatientsOfTherapist(_source.id, { afterDocID: args.afterDocID, perPage: args.perPage }, args.name)
+      return dataSources.usersAPI.getPatientsOfTherapist(_source.id, args.pagination, args.name)
     },
-    patientsPrevious: async(_source: any, args: any, context: any): Promise<any> => {
-      const dataSources = context.dataSources;
-      return dataSources.usersAPI.getPatientsOfTherapist(_source.id, { beforeDocID: args.beforeDocID, perPage: args.perPage }, args.name)
-    }
   },
   Query: {
-    //----- Test endpoint
-    hello: async(_source: any): Promise<string> => {
-      return "hello world";
-    },
     //----- Patients 
-    getPatient: async(_source: any, args: any, context: any): Promise<any> => {
+    patient: async(_source: any, args: { id: string; }, context: Context): Promise<any> => {
       const dataSources = context.dataSources;
       return dataSources.usersAPI.getPatient(args.id);
     },
-    getPatientsOfTherapistNext: async(_source: any, args: any, context: any): Promise<any> => {
+    patientsOfTherapist: async(_source: any, args: { id: string; pagination: PageDetails; name: string; }, context: Context): Promise<any> => {
       const dataSources = context.dataSources;
-      return dataSources.usersAPI.getPatientsOfTherapist(args.id, { afterDocID: args.afterDocID, perPage: args.perPage }, args.name);
-    },
-    getPatientsOfTherapistPrevious: async(_source: any, args: any, context: any): Promise<any> => {
-      const dataSources = context.dataSources;
-      return dataSources.usersAPI.getPatientsOfTherapist(args.id, { beforeDocID: args.beforeDocID, perPage: args.perPage }, args.name);
+      return dataSources.usersAPI.getPatientsOfTherapist(args.id, args.pagination, args.name);
     },
     //----- Therapists
-    getTherapist: async(_source: any, args: any, context: any): Promise<any> => {
+    therapist: async(_source: any, args: { id: string; }, context: Context): Promise<any> => {
       const dataSources = context.dataSources;
       return dataSources.usersAPI.getTherapist(args.id); 
     },
-    getTherapistsOfPatient: async(_source: any, args: any, context: any): Promise<any> => {
+    therapistsOfPatient: async(_source: any, args: { id: string; }, context: Context): Promise<any> => {
       const dataSources = context.dataSources;
       return dataSources.usersAPI.getTherapistsOfPatient(args.id); 
     },
     //----- Tasks
-    getTasksOfPatients: async(_source: any, args: any, context: any): Promise<any> => {
+    tasksOfPatients: async(_source: any, args: { nr_patients: number; bd_lt: any; bd_gt: any; condition: string; gender: Gender; nr_tasks_per_patient: number; type: string; }, context: Context): Promise<any> => {
       const dataSources = context.dataSources;
       const patientIDs =  await dataSources.usersAPI.getPatientsIDs(args.nr_patients, { bd_lt: args.bd_lt, bd_gt: args.bd_gt }, args.condition, args.gender);
       return await dataSources.medAPI.getTasks(patientIDs, args.nr_tasks_per_patient, args.type);
@@ -79,51 +78,51 @@ export const resolvers = {
   },
   Mutation: {
     //---- Patients 
-    createPatient: async(_source: any, args: any, context: any): Promise<string> => {
+    createPatient: async(_source: any, args: { patientInfo: any; }, context: Context): Promise<string> => {
       const user = context.user;
       const dataSources = context.dataSources;
       return dataSources.usersAPI.createPatient(args.patientInfo, user);
     },
-    updatePatient: async(_source: any, args: any, context: any): Promise<string> => {
+    updatePatient: async(_source: any, args: { patientInfo: any; id: string; }, context: Context): Promise<string> => {
       const dataSources = context.dataSources;
       return dataSources.usersAPI.updatePatient(args.patientInfo, args.id);
     },
-    deletePatient: async(_source: any, args: any, context: any): Promise<string> => {
+    deletePatient: async(_source: any, args: { id: string; }, context: Context): Promise<string> => {
       const dataSources = context.dataSources;
       return dataSources.usersAPI.deletePatient(args.id);
     },
     //---- Therapists
-    updateTherapist: async(_source: any, args: any, context: any): Promise<string> => {
+    updateTherapist: async(_source: any, args: { therapistInfo: any; id: string; }, context: Context): Promise<string> => {
       const dataSources = context.dataSources;
       return dataSources.usersAPI.updateTherapist(args.therapistInfo, args.id);
     },
-    deleteTherapist: async(_source: any, args: any, context: any): Promise<string> => {
+    deleteTherapist: async(_source: any, args: { id: string; }, context: Context): Promise<string> => {
       const dataSources = context.dataSources;
       return dataSources.usersAPI.deleteTherapist(args.id);
     },
     //---- Tasks
-    addTask: async(_source: any, args: any, context: any): Promise<string> => {
+    addTask: async(_source: any, args: { id: string; taskInfo: any; }, context: Context): Promise<string> => {
       const dataSources = context.dataSources;
       return dataSources.medAPI.addTaskToPatient(args.id, args.taskInfo);
     },
-    updateTask: async(_source: any, args: any, context: any): Promise<string> => {
+    updateTask: async(_source: any, args: { id: string; taskId: string; taskInfo: any; }, context: Context): Promise<string> => {
       const dataSources = context.dataSources;
       return dataSources.medAPI.updateTaskOfPatient(args.id, args.taskId, args.taskInfo); 
     },
-    deleteTask: async(_source: any, args: any, context: any): Promise<string> => {
+    deleteTask: async(_source: any, args: { id: string; taskId: string; }, context: Context): Promise<string> => {
       const dataSources = context.dataSources;
       return dataSources.medAPI.deleteTaskOfPatient(args.id, args.taskId);
     },
     //---- Todos
-    addTodo: async(_source: any, args: any, context: any): Promise<string> => {
+    addTodo: async(_source: any, args: { id: string; todoInfo: any; }, context: Context): Promise<string> => {
       const dataSources = context.dataSources;
       return dataSources.medAPI.addTodoToPatient(args.id, args.todoInfo);
     },
-    updateTodo: async(_source: any, args: any, context: any): Promise<string> => {
+    updateTodo: async(_source: any, args: { id: string; todoId: string; todoInfo: any; }, context: Context): Promise<string> => {
       const dataSources = context.dataSources;
       return dataSources.medAPI.updateTodoOfPatient(args.id, args.todoId, args.todoInfo); 
     },
-    deleteTodo: async(_source: any, args: any, context: any): Promise<string> => {
+    deleteTodo: async(_source: any, args: { id: string; todoId: string; }, context: Context): Promise<string> => {
       const dataSources = context.dataSources;
       return dataSources.medAPI.deleteTodoOfPatient(args.id, args.todoId);
     }

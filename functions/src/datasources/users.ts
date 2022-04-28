@@ -3,30 +3,34 @@ import { getFirestore, Query, Timestamp } from 'firebase-admin/firestore';
 import { UserInputError } from 'apollo-server-core';
 import { firestore } from 'firebase-admin';
 import { getAuth } from "firebase-admin/auth";
+import { Gender } from "../utils/enums";
+import type { PageDetails } from '../utils/types';
 
 // get the firestore database connected to the default project
 const userDb = getFirestore();
 
 // get the medical database
 import { medDb, hashID } from './med';
-
-// gender enum used as filter
-enum Gender {
-    M = "M", 
-    V = "V", 
-    X = "X"
-}
-
+import { Variables } from '../utils/variables';
 
 // database interactions for userdata
 export class UsersAPI extends DataSource {
+    
+    // the collection containing all the patients in the user database
+    #patientsRef = userDb.collection(Variables.PATIENT_COLLECTION);
+    
+    // the collection containing all the therapists in the user database
+    #therapistsRef = userDb.collection(Variables.THERAPIST_COLLECTION);
+
+    // the collection containing all the patients in the medical database
+    #medPatientsRef = medDb.collection(Variables.PATIENT_COLLECTION); 
     constructor() {
       super()
     }
     //====== Patient ======
     // get patient with id specified
     async getPatient(id: string): Promise<any> {
-        const patientRef = userDb.collection('patients').doc(id);
+        const patientRef = this.#patientsRef.doc(id);
         const doc = await patientRef.get();
         let docData = doc.data();
         if(docData == null)
@@ -39,40 +43,37 @@ export class UsersAPI extends DataSource {
     }
 
     // get patients of therapist with id specified
-    async getPatientsOfTherapist(id: string, pageDetails: {beforeDocID: string, afterDocID: string; perPage: number}, name: string): Promise<any> {
+    async getPatientsOfTherapist(id: string, pageDetails: PageDetails, name: string): Promise<any> {
         // if given id is not a therapist throw error
-        if(!(await userDb.collection('therapists').doc(id).get()).data())
+        if(!(await this.#therapistsRef.doc(id).get()).data())
             throw new UserInputError('The user with uid: ' + id + ' is not a therapist');
         // get the patients where the id is in the therapist array
-        let patientQuery = userDb.collection('patients').where("therapists", "array-contains", id);
+        let patientQuery = this.#patientsRef.where("therapists", "array-contains", id);
         // filter for name
-        if(name) {
+        if(name)
             // https://stackoverflow.com/questions/46568142/google-firestore-query-on-substring-of-a-property-value-text-search
             patientQuery = patientQuery
                                 .where('name', '>=', name)
-                                .where('name', '<=', name + '\uf8ff').orderBy("name");
+                                .where('name', '<=', name + '\uf8ff').orderBy('name');
 
-            // pagination
-            //order by documentID first
-            patientQuery = patientQuery.orderBy(firestore.FieldPath.documentId());
-            // if afterDocID is specified start after this document (need name and document ID to determine the document to start at)
-            if(pageDetails.afterDocID)
-                patientQuery = patientQuery.startAfter((await userDb.collection('patients').doc(pageDetails.afterDocID).get()).data()?.name, pageDetails.afterDocID);
+        // pagination
+        //order by documentID first
+        patientQuery = patientQuery.orderBy(firestore.FieldPath.documentId());
+
+        // throws error if the user tries to do pagination within a list of lists of items e.g. tasks of multiple patients
+        try {
+            // if afterDocID is specified start after this document
+            if(pageDetails.next && pageDetails.afterDocID)
+                if (name) patientQuery = patientQuery.startAfter((await this.#patientsRef.doc(pageDetails.afterDocID).get()).data()?.name, pageDetails.afterDocID);
+                else patientQuery = patientQuery.startAfter(pageDetails.afterDocID);
             // else end before this document
-            else if(pageDetails.beforeDocID)
-                patientQuery = patientQuery.endBefore((await userDb.collection('patients').doc(pageDetails.beforeDocID).get()).data()?.name, pageDetails.beforeDocID);
+            else if(!pageDetails.next && pageDetails.beforeDocID)
+                if (name) patientQuery = patientQuery.endBefore((await this.#patientsRef.doc(pageDetails.beforeDocID).get()).data()?.name, pageDetails.beforeDocID);
+                else patientQuery = patientQuery.endBefore(pageDetails.beforeDocID);
+        } catch (error: any) {
+            throw new UserInputError("Can not perform query. Make sure you are not doing pagination within a list of lists of items.")
         }
-        else {
-            // pagination
-            // order by documentID first
-            patientQuery = patientQuery.orderBy(firestore.FieldPath.documentId());
-            // if afterDocID is specified start after this document (only document ID is needed)
-            if(pageDetails.afterDocID)
-                patientQuery = patientQuery.startAfter(pageDetails.afterDocID);
-            // else end before this document
-            else if(pageDetails.beforeDocID)
-                patientQuery = patientQuery.endBefore(pageDetails.beforeDocID);
-        }
+        
         // limit the results to the amount requested
         patientQuery = patientQuery.limit(pageDetails.perPage);
         const snapshot = await patientQuery.get();
@@ -89,7 +90,7 @@ export class UsersAPI extends DataSource {
      // get patients with specified characteristics
      async getPatientsIDs(nr_patients: number, birthdateParams: {bd_lt: Date; bd_gt: Date}, condition: string, gender: Gender): Promise<string[]> {
         // get a reference to the patients collection
-        let patientQuery = userDb.collection('patients') as Query;
+        let patientQuery = this.#patientsRef as Query;
         // if bd_lt is specified, filter
         if(birthdateParams.bd_lt)
             patientQuery = patientQuery.where("birthdate", "<=", birthdateParams.bd_lt);
@@ -123,11 +124,11 @@ export class UsersAPI extends DataSource {
             // add therapist to args object
             patientInfo.therapists = [user.uid];
             // add custom user claim for the patient (adds role claim to the idtokens retrieved from firebase)
-            getAuth().setCustomUserClaims(userRec.uid, { role: "patient" }); 
+            getAuth().setCustomUserClaims(userRec.uid, { role: Variables.PATIENT_ROLE }); 
             // create document with user data in the user database
-            await userDb.collection('patients').doc(userRec.uid).set(patientInfo);
+            await this.#patientsRef.doc(userRec.uid).set(patientInfo);
             // create empty document in the med database TODO hash
-            await medDb.collection('patients').doc(hashID(userRec.uid)).set({});
+            await medDb.collection(Variables.PATIENT_COLLECTION).doc(hashID(userRec.uid)).set({});
             return userRec.uid;
         // if anything goes wrong throw error
         } catch(error: any) {
@@ -147,7 +148,7 @@ export class UsersAPI extends DataSource {
             // delete the password from patientInfo object
             delete patientInfo.password;
             // update document with user data in the user database
-            await userDb.collection('patients').doc(userRec.uid).update(patientInfo);
+            await this.#patientsRef.doc(userRec.uid).update(patientInfo);
             return userRec.uid;
         // if anything goes wrong throw error
         } catch(error: any) {
@@ -161,8 +162,8 @@ export class UsersAPI extends DataSource {
             // create the user
             await getAuth().deleteUser(id);
             // create document with user data in the user database
-            await userDb.collection('patients').doc(id).delete();
-            const medUser = medDb.collection('patients').doc(hashID(id));
+            await this.#patientsRef.doc(id).delete();
+            const medUser = this.#medPatientsRef.doc(hashID(id));
             // get all subcollections for this user
             const collections = await medUser.listCollections();
             const batch = medDb.batch();
@@ -178,7 +179,7 @@ export class UsersAPI extends DataSource {
             // execute batch
             await batch.commit();
 
-            await medDb.collection('patients').doc(hashID(id)).delete();
+            await this.#medPatientsRef.doc(hashID(id)).delete();
             return id;
         // if anything goes wrong throw error
         } catch(error: any) {
@@ -189,7 +190,7 @@ export class UsersAPI extends DataSource {
     //====== Therapist ======
     // get therapist with the id specified
     async getTherapist(id: string): Promise<any> {
-        const theraRef = userDb.collection('therapists').doc(id);
+        const theraRef = this.#therapistsRef.doc(id);
         const doc = await theraRef.get();
         let docData = doc.data();
         if(docData == null)
@@ -206,7 +207,7 @@ export class UsersAPI extends DataSource {
         const patientData = await this.getPatient(id);
         // get therapist ids
         const therapists = patientData.therapists; 
-        const theraRef = userDb.collection('therapists');
+        const theraRef = this.#therapistsRef;
         // create an empty array which will contain the data
         let docData = [];
         // for every therapist of the patient add the data to docData
@@ -235,7 +236,7 @@ export class UsersAPI extends DataSource {
             // delete the password from therapistInfo object
             delete therapistInfo.password;
             // update document with user data in the user database
-            await userDb.collection('therapists').doc(userRec.uid).update(therapistInfo);
+            await this.#therapistsRef.doc(userRec.uid).update(therapistInfo);
             return userRec.uid;
         // if anything goes wrong throw error
         } catch(error: any) {
@@ -249,14 +250,13 @@ export class UsersAPI extends DataSource {
             // create the user
             await getAuth().deleteUser(id);
             // create document with user data in the user database
-            await userDb.collection('therapists').doc(id).delete();
+            await this.#therapistsRef.doc(id).delete();
             return id;
         // if anything goes wrong throw error
         } catch(error: any) {
             throw new UserInputError(error.errorInfo.message, error.errorInfo);
         }
     }
-
 
     // checks whether a user is the therapist of a patient
     async isTherapistOfPatient(therapistId: string, patientId: string): Promise<boolean> {
