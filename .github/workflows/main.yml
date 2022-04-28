@@ -30,6 +30,6 @@ jobs:
     - name:  Deploy to Firebase
       uses: w9jds/firebase-action@master
       with:
-          args: deploy --only functions:v1, functions:processSignup
+          args: deploy --only functions:v1, functions:processSignUp
       env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
