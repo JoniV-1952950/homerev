@@ -200,7 +200,7 @@ export class MedAPI extends DataSource {
             if(type)
                 tasksQuery = tasksQuery.where("type", "==", type);
 
-            docData.push(await (this.#getData(tasksQuery, nr_tasks_per_patient)));
+            docData.push(...(await (this.#getData(tasksQuery, nr_tasks_per_patient))));
         }
         return docData; 
     }

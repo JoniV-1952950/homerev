@@ -139,7 +139,7 @@ export const queries = gql`
       condition: String,
       "The type of the tasks you are looking for"
       type: ProjectType
-    ): [[Task]!]! @auth(requires: [therapist, student])
+    ): [Task]! @auth(requires: [therapist, student])
   }
   #### TYPES ####
   "The therapist type, requires role: patient or therapist to read"
