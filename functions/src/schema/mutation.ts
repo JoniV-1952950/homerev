@@ -12,7 +12,7 @@ export const mutations = gql`
     createPatient(
       "The information of the new patient"
       patientInfo: PatientInput!
-    ): String @auth(requires: [therapist])
+    ): Patient @auth(requires: [therapist])
     """
     Update a patients personal information.
     Returns the uid of the patient
@@ -23,7 +23,7 @@ export const mutations = gql`
       id: String!, 
       "The information of the patient"
       patientInfo: PatientInput!
-    ): String @auth(requires: [patient, therapist])
+    ): Patient @auth(requires: [patient, therapist])
     """
     Delete a patient.
     Returns the uid of the patient
@@ -45,7 +45,7 @@ export const mutations = gql`
       id: String!, 
       "The therapist information"
       therapistInfo: TherapistInput!
-    ): String @auth(requires: [therapist])
+    ): Therapist @auth(requires: [therapist])
     """
     Delete a therapist.
     Returns the uid of the therapist
@@ -67,7 +67,7 @@ export const mutations = gql`
       id: String!, 
       "The task information"
       taskInfo: TaskInput!
-    ): String @auth(requires: [patient]) 
+    ): Task @auth(requires: [patient]) 
     
     """
     Update a task of a patient.
@@ -81,7 +81,7 @@ export const mutations = gql`
       taskId: String!, 
       "The task information"
       taskInfo: TaskInput!
-    ): String @auth(requires: [patient])
+    ): Task @auth(requires: [patient])
     """
     Delete a task of a patient.
     Returns the id of the task
@@ -105,7 +105,7 @@ export const mutations = gql`
       id: String!, 
       "The todo information"
       todoInfo: TodoInput!
-    ): String @auth(requires: [therapist]) 
+    ): Todo @auth(requires: [therapist]) 
     """
     Update a todo of a patient.
     Returns the id of the todo
@@ -118,7 +118,7 @@ export const mutations = gql`
       todoId: String!, 
       "The todo information"
       todoInfo: TodoInput!
-    ): String @auth(requires: [therapist])
+    ): Todo @auth(requires: [therapist])
     """
     Delete a todo. 
     Returns the id of the todo

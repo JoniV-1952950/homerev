@@ -129,7 +129,7 @@ export class UsersAPI extends DataSource {
             await this.#patientsRef.doc(userRec.uid).set(patientInfo);
             // create empty document in the med database TODO hash
             await medDb.collection(Variables.PATIENT_COLLECTION).doc(hashID(userRec.uid)).set({});
-            return userRec.uid;
+            return await this.getPatient(userRec.uid);
         // if anything goes wrong throw error
         } catch(error: any) {
             throw new UserInputError(error.errorInfo.message, error.errorInfo);
@@ -137,7 +137,7 @@ export class UsersAPI extends DataSource {
     }
 
     // update a patient with the fields specified in patientInfo
-    async updatePatient(patientInfo: any, id: string): Promise<string> {
+    async updatePatient(patientInfo: any, id: string): Promise<any> {
         try{
             // update the user
             const userRec = await getAuth().updateUser(id, {
@@ -149,7 +149,7 @@ export class UsersAPI extends DataSource {
             delete patientInfo.password;
             // update document with user data in the user database
             await this.#patientsRef.doc(userRec.uid).update(patientInfo);
-            return userRec.uid;
+            return await this.getPatient(userRec.uid);
         // if anything goes wrong throw error
         } catch(error: any) {
             throw new UserInputError(error.errorInfo.message, error.errorInfo);
@@ -225,7 +225,7 @@ export class UsersAPI extends DataSource {
     }
 
     // update a therapist with the fields specified in patientInfo
-    async updateTherapist(therapistInfo: any, id: string): Promise<string> {
+    async updateTherapist(therapistInfo: any, id: string): Promise<any> {
         try{
             // update the user
             const userRec = await getAuth().updateUser(id, {
@@ -237,7 +237,7 @@ export class UsersAPI extends DataSource {
             delete therapistInfo.password;
             // update document with user data in the user database
             await this.#therapistsRef.doc(userRec.uid).update(therapistInfo);
-            return userRec.uid;
+            return await this.getTherapist(userRec.uid);
         // if anything goes wrong throw error
         } catch(error: any) {
             throw new UserInputError(error.errorInfo.message, error.errorInfo);

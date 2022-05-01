@@ -206,7 +206,7 @@ export class MedAPI extends DataSource {
     }
 
     // add a new task for the patient specified with patientId
-    async addTaskToPatient(patientId: string, taskInfo: any): Promise<string> {
+    async addTaskToPatient(patientId: string, taskInfo: any): Promise<any> {
         // hash the patientId
         patientId = hashID(patientId);
         //throws error if user does not exist
@@ -214,21 +214,21 @@ export class MedAPI extends DataSource {
         const taskRef = this.#patientsRef.doc(patientId).collection(Variables.TASKS_COLLECTION);
         taskInfo.dateCreated = new Date();
         const task = await taskRef.add(taskInfo);
-        return task.id; 
+        return (await task.get()).data(); 
     }
 
     // update task from patientId with taskId
-    async updateTaskOfPatient(patientId: string, taskId: string, taskInfo: any): Promise<string> {
+    async updateTaskOfPatient(patientId: string, taskId: string, taskInfo: any): Promise<any> {
         // hash the patientId
-        patientId = hashID(patientId);
+        const hPatientId = hashID(patientId);
         //throws error if user does not exist
-        await this.#patientExists(patientId);
-        const taskRef = this.#patientsRef.doc(patientId).collection(Variables.TASKS_COLLECTION).doc(taskId);
+        await this.#patientExists(hPatientId);
+        const taskRef = this.#patientsRef.doc(hPatientId).collection(Variables.TASKS_COLLECTION).doc(taskId);
         // check if task exists for this user
         if(!(await taskRef.get()).exists)
             throw new UserInputError('There does not exist a task with id: ' + taskId + ' for the patient with uid: ' + patientId);
         await taskRef.update(taskInfo);
-        return taskRef.id; 
+        return await this.getTaskOfPatient(patientId, taskRef.id); 
     }
 
     // delete task from patientId with taskId
@@ -316,7 +316,7 @@ export class MedAPI extends DataSource {
     }
 
     // add a new todo for the patient specified with patientId
-    async addTodoToPatient(patientId: string, todoInfo: any): Promise<string> {
+    async addTodoToPatient(patientId: string, todoInfo: any): Promise<any> {
         // hash the patientId
         patientId = hashID(patientId);
         //throws error if user does not exist
@@ -324,21 +324,21 @@ export class MedAPI extends DataSource {
         const todoRef = this.#patientsRef.doc(patientId).collection(Variables.TODOS_COLLECTION);
         todoInfo.dateCreated = new Date();
         const todo = await todoRef.add(todoInfo);
-        return todo.id; 
+        return (await todo.get()).data(); 
     }
 
     // update todo from patientId with todoId
-    async updateTodoOfPatient(patientId: string, todoId: string, todoInfo: any): Promise<string> {
+    async updateTodoOfPatient(patientId: string, todoId: string, todoInfo: any): Promise<any> {
         // hash the patientId
-        patientId = hashID(patientId);
+        const hPatientId = hashID(patientId);
         //throws error if user does not exist
-        await this.#patientExists(patientId);
-        const todoRef = this.#patientsRef.doc(patientId).collection(Variables.TODOS_COLLECTION).doc(todoId);
+        await this.#patientExists(hPatientId);
+        const todoRef = this.#patientsRef.doc(hPatientId).collection(Variables.TODOS_COLLECTION).doc(todoId);
         // check if todo exists for this user
         if(!(await todoRef.get()).exists)
             throw new UserInputError('There does not exist a todo with id: ' + todoId + ' for the patient with uid: ' + patientId);
         await todoRef.update(todoInfo);
-        return todoRef.id; 
+        return await this.getTodoOfPatient(patientId, todoId);
     }
 
     // delete todo from patientId with todoId
