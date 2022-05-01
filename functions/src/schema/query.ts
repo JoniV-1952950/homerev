@@ -152,6 +152,8 @@ export const queries = gql`
     birthdate: Date! 
     "The address of the therapist"
     address: String!
+    "The email address of the therapist"
+    email: String!
     "The telephone number of the therapist"
     telephone: String!
     "Gets all the patients of a therapist (equals next page request)"
@@ -177,6 +179,8 @@ export const queries = gql`
     condition: String!
     "The telephone number of the patient"
     telephone: String!
+    "The email address of the patient"
+    email: String!
     "The gender of the patient"
     gender: Gender!
     "The therapists of the patient"
