@@ -55,7 +55,7 @@ export class MedAPI extends DataSource {
     async #patientExists(patientId: string): Promise<void> {
         const patientRef = this.#patientsRef.doc(patientId);
         if(!(await patientRef.get()).exists)
-            throw new UserInputError('The patient with uid: ' + patientId + ' does not exist');
+            throw new UserInputError('The requested patient does not exist');
     }
 
     // convert the value from a string to the given type
@@ -122,10 +122,10 @@ export class MedAPI extends DataSource {
     // get the task with taskId for patient with patientId
     async getTaskOfPatient(patientId: string, taskId: string): Promise<any> {
         // hash the patientId
-        patientId = hashID(patientId);
+        const hPatientId = hashID(patientId);
         //throws error if user does not exist
-        await this.#patientExists(patientId);
-        const taskRef = this.#patientsRef.doc(patientId).collection(Variables.TASKS_COLLECTION).doc(taskId);
+        await this.#patientExists(hPatientId);
+        const taskRef = this.#patientsRef.doc(hPatientId).collection(Variables.TASKS_COLLECTION).doc(taskId);
         const task = await taskRef.get();
         let data = task.data();
         if(data) {
@@ -144,10 +144,10 @@ export class MedAPI extends DataSource {
             throw new UserInputError("Can only filter on one field."); 
 
         // hash the patientId
-        patientId = hashID(patientId);
+        const hPatientId = hashID(patientId);
         //throws error if user does not exist
-        await this.#patientExists(patientId);
-        let tasksQuery = this.#patientsRef.doc(patientId).collection(Variables.TASKS_COLLECTION) as Query;
+        await this.#patientExists(hPatientId);
+        let tasksQuery = this.#patientsRef.doc(hPatientId).collection(Variables.TASKS_COLLECTION) as Query;
 
         if(type)
             tasksQuery = tasksQuery.where("type", "==", type);
@@ -182,7 +182,7 @@ export class MedAPI extends DataSource {
         }
         else field = filter.field;
         // add pagination to the query
-        tasksQuery = await this.#addPaginationToQuery(this.#patientsRef.doc(patientId).collection(Variables.TASKS_COLLECTION), tasksQuery, pageDetails, field);
+        tasksQuery = await this.#addPaginationToQuery(this.#patientsRef.doc(hPatientId).collection(Variables.TASKS_COLLECTION), tasksQuery, pageDetails, field);
 
         // return the data retrieved with this query
         return await this.#getData(tasksQuery, pageDetails.perPage); 
@@ -193,10 +193,10 @@ export class MedAPI extends DataSource {
         // hash the patientId
         let docData = [];
         for(let patientId of patientIDs){
-            patientId = hashID(patientId);
+            const hPatientId = hashID(patientId);
             //throws error if user does not exist
-            await this.#patientExists(patientId);
-            let tasksQuery = this.#patientsRef.doc(patientId).collection(Variables.TASKS_COLLECTION) as Query;
+            await this.#patientExists(hPatientId);
+            let tasksQuery = this.#patientsRef.doc(hPatientId).collection(Variables.TASKS_COLLECTION) as Query;
             if(type)
                 tasksQuery = tasksQuery.where("type", "==", type);
 
@@ -210,7 +210,7 @@ export class MedAPI extends DataSource {
         // hash the patientId
         const hPatientId = hashID(patientId);
         //throws error if user does not exist
-        await this.#patientExists(patientId);
+        await this.#patientExists(hPatientId);
         const taskRef = this.#patientsRef.doc(hPatientId).collection(Variables.TASKS_COLLECTION);
         taskInfo.dateCreated = new Date();
         const task = await taskRef.add(taskInfo);
@@ -234,10 +234,10 @@ export class MedAPI extends DataSource {
     // delete task from patientId with taskId
     async deleteTaskOfPatient(patientId: string, taskId: string): Promise<string> {
         // hash the patientId
-        patientId = hashID(patientId);        
+        const hPatientId = hashID(patientId);        
         //throws error if user does not exist
-        await this.#patientExists(patientId);
-        const taskRef = this.#patientsRef.doc(patientId).collection(Variables.TASKS_COLLECTION).doc(taskId);
+        await this.#patientExists(hPatientId);
+        const taskRef = this.#patientsRef.doc(hPatientId).collection(Variables.TASKS_COLLECTION).doc(taskId);
         // check if task exists for this user
         if(!(await taskRef.get()).exists)
             throw new UserInputError('There does not exist a task with id: ' + taskId + ' for the patient with uid: ' + patientId);
@@ -249,10 +249,10 @@ export class MedAPI extends DataSource {
     // get the todo with todoId for patient with patientId
     async getTodoOfPatient(patientId: string, todoId: string): Promise<any> {
         // hash the patientId
-        patientId = hashID(patientId);
+        const hPatientId = hashID(patientId);
         //throws error if user does not exist
-        await this.#patientExists(patientId);
-        const todoRef = this.#patientsRef.doc(patientId).collection(Variables.TODOS_COLLECTION).doc(todoId);
+        await this.#patientExists(hPatientId);
+        const todoRef = this.#patientsRef.doc(hPatientId).collection(Variables.TODOS_COLLECTION).doc(todoId);
         const todo = await todoRef.get();
         let data = todo.data();
         if(data) {
@@ -272,10 +272,10 @@ export class MedAPI extends DataSource {
             throw new UserInputError("Can only filter on one field."); 
 
         // hash the patientId
-        patientId = hashID(patientId);
+        const hPatientId = hashID(patientId);
         //throws error if user does not exist
-        await this.#patientExists(patientId);
-        let todosQuery = this.#patientsRef.doc(patientId).collection(Variables.TODOS_COLLECTION) as Query;
+        await this.#patientExists(hPatientId);
+        let todosQuery = this.#patientsRef.doc(hPatientId).collection(Variables.TODOS_COLLECTION) as Query;
 
         if(type)
             todosQuery = todosQuery.where("type", "==", type);
@@ -310,7 +310,7 @@ export class MedAPI extends DataSource {
         }
         else field = filter.field;
         // add pagination to the query
-        todosQuery = await this.#addPaginationToQuery(this.#patientsRef.doc(patientId).collection(Variables.TODOS_COLLECTION), todosQuery, pageDetails, field);
+        todosQuery = await this.#addPaginationToQuery(this.#patientsRef.doc(hPatientId).collection(Variables.TODOS_COLLECTION), todosQuery, pageDetails, field);
 
         // return the data retrieved with this query
         return await this.#getData(todosQuery, pageDetails.perPage); 
@@ -345,10 +345,10 @@ export class MedAPI extends DataSource {
     // delete todo from patientId with todoId
     async deleteTodoOfPatient(patientId: string, todoId: string): Promise<string> {
         // hash the patientId
-        patientId = hashID(patientId);
+        const hPatientId = hashID(patientId);
         //throws error if user does not exist
-        await this.#patientExists(patientId);
-        const todoRef = this.#patientsRef.doc(patientId).collection(Variables.TODOS_COLLECTION).doc(todoId);
+        await this.#patientExists(hPatientId);
+        const todoRef = this.#patientsRef.doc(hPatientId).collection(Variables.TODOS_COLLECTION).doc(todoId);
         // check if todo exists for this user
         if(!(await todoRef.get()).exists)
             throw new UserInputError('There does not exist a todo with id: ' + todoId + ' for the patient with uid: ' + patientId);
