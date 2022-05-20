@@ -259,6 +259,7 @@ export class MedAPI extends DataSource {
             // set the todoId as a value in the return for easy processing client side
             data.id = todoId;
             data.dateCreated = data.dateCreated.toDate();
+            data.deadline = data.deadline.toDate();
             return data; 
         }
         throw new UserInputError('There does not exist a todo with id: ' + todoId + ' for the patient with uid: ' + patientId);
