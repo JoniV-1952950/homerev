@@ -8,7 +8,8 @@ The publicly available API can be found at https://europe-west1-homerev-users.cl
 ```bash
 curl 'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=[API-key here]' -H 'Content-Type: application/json' --data-binary '{"email":"[email here]","password":"[password here]","returnSecureToken":true}'
 ```
-It is also possible to login to the frontend application and copy the token from the console output (open the developer tools)
+It is also possible to login to the frontend application and copy the token from the console output (open the developer tools) (https://homerev-frontend.web.app/) The repository for this application can be found here: https://github.com/JoniV-1952950/Homerev-frontend.
+
 #
 To run this application locally, you can run these commands in the root directory of the project:
 ```bash
